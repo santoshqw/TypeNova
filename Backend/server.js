@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
-
+import { connectDB } from "./config/db.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -16,6 +16,9 @@ app.get('/api/test', (req, res) => {
 });
 
 
-app.listen(PORT, () => {
-	console.log(`Server running on http://localhost:${PORT}`);
+connectDB().then(() => {
+  //first connect the DB then run the app.
+  app.listen(PORT, () => {
+    console.log("Server started on PORT", PORT);
+  });
 });
