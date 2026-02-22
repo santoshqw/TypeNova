@@ -1,9 +1,12 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
+import dotenv from "dotenv";
+import express from "express";
+import cors from "cors";
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+dotenv.config();
 
 app.use(cors({ origin: 'http://localhost:5173' }));
 app.use(express.json());
