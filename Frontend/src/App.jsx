@@ -1,8 +1,16 @@
 import React from 'react'
+import {Routes, Route} from "react-router";
+
+import ProfilePage from './pages/user/ProfilePage';
+
 
 const App = () => {
   return (
-    <div>Initial project setup</div>
+    <>
+      <Routes>
+        <Route path="/profile" element ={<ProfilePage />} />
+      </Routes>
+    </>
   )
 }
 
