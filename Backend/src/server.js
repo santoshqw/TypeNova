@@ -3,6 +3,8 @@ import express from "express";
 import cors from "cors";
 import { connectDB } from "./config/db.js"
 
+import userRoutes from "./routes/user.route.js"
+
 dotenv.config();
 
 const app = express();
@@ -15,6 +17,7 @@ app.get('/api/test', (req, res) => {
 	res.status(200).json({ ok: true, message: 'tesing server is running or not'});
 });
 
+app.use('/api/user', userRoutes);
 
 connectDB().then(() => {
   //first connect the DB then run the app.
