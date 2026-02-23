@@ -3,6 +3,7 @@ import {
   signupUser,
   loginUser,
   logoutUser,
+  getProfile
 } from "../controllers/user.controller.js";
 //middleware to check user is logged in or not.
 import { isLoggedIn } from "../middleware/authMiddleware.js";
