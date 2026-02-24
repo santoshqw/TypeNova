@@ -1,1 +1,41 @@
 @import "tailwindcss";
+
+.typing-prompt {
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.typing-overlay {
+	white-space: pre-wrap;
+	word-break: break-word;
+	pointer-events: none;
+}
+
+.typing-char {
+	position: relative;
+}
+
+.typing-caret {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 2px;
+	background: #18181b;
+	animation: typing-cursor-blink 0.9s step-end infinite;
+	transition: transform 90ms linear;
+	will-change: transform, opacity;
+	pointer-events: none;
+}
+
+@keyframes typing-cursor-blink {
+	0%,
+	45% {
+		opacity: 1;
+	}
+
+	46%,
+	100% {
+		opacity: 0;
+	}
+}
