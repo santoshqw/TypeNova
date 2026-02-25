@@ -191,7 +191,6 @@ const HomePage = () => {
       setUserInput((previousInput) => {
         const newInput = previousInput.slice(0, -1);
         userInputRef.current = newInput;
-        console.log("Cursor index:", newInput.length);
         return newInput;
       });
       return;
@@ -207,7 +206,6 @@ const HomePage = () => {
 
     // Track every keystroke for true accuracy & raw WPM
     const cursorPos = userInputRef.current.length;
-    console.log("Cursor index:", cursorPos);
     totalKeystrokesRef.current += 1;
     setTotalKeystrokes((prev) => prev + 1);
 

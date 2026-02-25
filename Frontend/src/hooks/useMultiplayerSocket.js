@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { io } from "socket.io-client";
 
-const SOCKET_URL = "http://localhost:3000";
-
 const useMultiplayerSocket = () => {
   const socketRef = useRef(null);
   const [connected, setConnected] = useState(false);
@@ -10,7 +8,9 @@ const useMultiplayerSocket = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const socket = io(SOCKET_URL, { autoConnect: true });
+    // In production, connect to same origin; in dev, connect to backend port
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || "";
+    const socket = io(socketUrl, { autoConnect: true });
     socketRef.current = socket;
 
     socket.on("connect", () => setConnected(true));

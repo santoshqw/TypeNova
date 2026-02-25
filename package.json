@@ -1,0 +1,16 @@
+{
+  "name": "typenova",
+  "version": "1.0.0",
+  "description": "MonkeyType-style typing test with multiplayer racing",
+  "scripts": {
+    "install:frontend": "npm install --prefix Frontend",
+    "install:backend": "npm install --prefix Backend",
+    "install:all": "npm run install:frontend && npm run install:backend",
+    "build": "npm run install:frontend && npm run build:frontend",
+    "build:frontend": "npm run --prefix Frontend build",
+    "start": "npm run --prefix Backend start",
+    "dev": "concurrently \"npm run --prefix Backend dev\" \"npm run --prefix Frontend dev\""
+  },
+  "keywords": [],
+  "license": "ISC"
+}

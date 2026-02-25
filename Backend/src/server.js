@@ -1,24 +1,34 @@
 import dotenv from "dotenv";
 import express from "express";
+import path from "path";
 import cors from "cors";
 import { connectDB } from "./config/db.js"
 import { initSocket } from "./socket/socket.js"
 
 import userRoutes from "./routes/user.route.js"
 
-dotenv.config();
+dotenv.config({ path: path.resolve("Backend", ".env") });
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const __dirname = path.resolve();
 
-app.use(cors({ origin: 'http://localhost:5173' }));
+const allowedOrigins = process.env.NODE_ENV === "production"
+  ? [process.env.CLIENT_URL].filter(Boolean)
+  : ["http://localhost:5173"];
+
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 
-app.get('/api/test', (req, res) => {
-	res.status(200).json({ ok: true, message: 'tesing server is running or not'});
-});
-
 app.use('/api/user', userRoutes);
+
+// Serve frontend in production
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "Frontend/dist")));
+  app.get("*", (req, res) => {
+    res.sendFile(path.resolve(__dirname, "Frontend/dist/index.html"));
+  });
+}
 
 const server = initSocket(app);
 

@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: typenova
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: npm install --prefix Backend && npm install --prefix Frontend && npm run --prefix Frontend build
+    startCommand: npm run --prefix Backend start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
