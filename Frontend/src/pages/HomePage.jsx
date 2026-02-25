@@ -31,9 +31,14 @@ const HomePage = () => {
   const [graphData, setGraphData] = useState([]);
   const [completedTyped, setCompletedTyped] = useState(0);
   const [completedCorrect, setCompletedCorrect] = useState(0);
+  const [totalKeystrokes, setTotalKeystrokes] = useState(0);
+  const [totalMistakes, setTotalMistakes] = useState(0);
   const typingBoxRef = useRef(null);
   const totalTypedRef = useRef(0);
   const totalCorrectRef = useRef(0);
+  const totalKeystrokesRef = useRef(0);
+  const totalMistakesRef = useRef(0);
+  const userInputRef = useRef("");
 
   const currentText = TEST_TEXTS[currentTextIndex];
 
@@ -41,6 +46,7 @@ const HomePage = () => {
     typingBoxRef.current?.focus();
   }, []);
 
+  
   const currentCorrectCharacters = useMemo(
     () => countCorrectCharacters(userInput, currentText),
     [userInput, currentText],
@@ -69,21 +75,29 @@ const HomePage = () => {
       return 0;
     }
 
-    return Math.round(totalTyped / 5 / elapsedMinutes);
-  }, [timeLeft, totalTyped, duration]);
+    return Math.round(totalKeystrokes / 5 / elapsedMinutes);
+  }, [timeLeft, totalKeystrokes, duration]);
 
   const accuracy = useMemo(() => {
-    if (!totalTyped) {
-      return 0;
+    if (!totalKeystrokes) {
+      return 100;
     }
 
-    return Math.round((totalCorrect / totalTyped) * 100);
-  }, [totalCorrect, totalTyped]);
+    return Math.min(
+      100,
+      Math.round(((totalKeystrokes - totalMistakes) / totalKeystrokes) * 100),
+    );
+  }, [totalKeystrokes, totalMistakes]);
 
   useEffect(() => {
     totalTypedRef.current = totalTyped;
     totalCorrectRef.current = totalCorrect;
   }, [totalTyped, totalCorrect]);
+
+  useEffect(() => {
+    totalKeystrokesRef.current = totalKeystrokes;
+    totalMistakesRef.current = totalMistakes;
+  }, [totalKeystrokes, totalMistakes]);
 
   const appendGraphPoint = (elapsedSeconds) => {
     if (elapsedSeconds <= 0) {
@@ -92,13 +106,15 @@ const HomePage = () => {
 
     const currentTotalTyped = totalTypedRef.current;
     const currentTotalCorrect = totalCorrectRef.current;
+    const currentKeystrokes = totalKeystrokesRef.current;
+    const currentMistakes = totalMistakesRef.current;
     const currentErrors = currentTotalTyped - currentTotalCorrect;
     const currentWpm = Math.round((currentTotalCorrect / 5) * (60 / elapsedSeconds));
-    const currentRaw = Math.round((currentTotalTyped / 5) * (60 / elapsedSeconds));
+    const currentRaw = Math.round((currentKeystrokes / 5) * (60 / elapsedSeconds));
     const currentAccuracy =
-      currentTotalTyped > 0
-        ? Math.round((currentTotalCorrect / currentTotalTyped) * 100)
-        : 0;
+      currentKeystrokes > 0
+        ? Math.round(((currentKeystrokes - currentMistakes) / currentKeystrokes) * 100)
+        : 100;
 
     setGraphData((previousData) => {
       const lastPoint = previousData[previousData.length - 1];
@@ -170,7 +186,12 @@ const HomePage = () => {
     event.preventDefault();
 
     if (event.key === "Backspace") {
-      setUserInput((previousInput) => previousInput.slice(0, -1));
+      setUserInput((previousInput) => {
+        const newInput = previousInput.slice(0, -1);
+        userInputRef.current = newInput;
+        console.log("Cursor index:", newInput.length);
+        return newInput;
+      });
       return;
     }
 
@@ -182,10 +203,22 @@ const HomePage = () => {
       setIsRunning(true);
     }
 
+    // Track every keystroke for true accuracy & raw WPM
+    const cursorPos = userInputRef.current.length;
+    console.log("Cursor index:", cursorPos);
+    totalKeystrokesRef.current += 1;
+    setTotalKeystrokes((prev) => prev + 1);
+
+    if (event.key !== currentText[cursorPos]) {
+      totalMistakesRef.current += 1;
+      setTotalMistakes((prev) => prev + 1);
+    }
+
     setUserInput((previousInput) => {
       const nextInput = (previousInput + event.key).slice(0, currentText.length);
 
       if (nextInput.length === currentText.length) {
+        userInputRef.current = "";
         setCompletedTyped((previousTotal) => previousTotal + currentText.length);
         setCompletedCorrect((previousTotal) => {
           const correctForPassage = countCorrectCharacters(nextInput, currentText);
@@ -195,6 +228,7 @@ const HomePage = () => {
         return "";
       }
 
+      userInputRef.current = nextInput;
       return nextInput;
     });
   };
@@ -208,8 +242,13 @@ const HomePage = () => {
     setGraphData([]);
     setCompletedTyped(0);
     setCompletedCorrect(0);
+    setTotalKeystrokes(0);
+    setTotalMistakes(0);
     totalTypedRef.current = 0;
     totalCorrectRef.current = 0;
+    totalKeystrokesRef.current = 0;
+    totalMistakesRef.current = 0;
+    userInputRef.current = "";
     typingBoxRef.current?.focus();
   };
 
@@ -223,8 +262,13 @@ const HomePage = () => {
     setGraphData([]);
     setCompletedTyped(0);
     setCompletedCorrect(0);
+    setTotalKeystrokes(0);
+    setTotalMistakes(0);
     totalTypedRef.current = 0;
     totalCorrectRef.current = 0;
+    totalKeystrokesRef.current = 0;
+    totalMistakesRef.current = 0;
+    userInputRef.current = "";
     typingBoxRef.current?.focus();
   };
 
@@ -302,7 +346,10 @@ const HomePage = () => {
               accuracy={accuracy}
               time={duration}
               raw={rawWpm}
-              characters={totalTyped}
+              correct={totalCorrect}
+              incorrect={totalTyped - totalCorrect}
+              extra={totalKeystrokes - totalTyped}
+              missed={0}
             />
             <TypingGraph data={graphData} showAfterComplete={isFinished} />
           </div>

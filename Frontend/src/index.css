@@ -46,16 +46,44 @@ body {
   width: 3px;
   border-radius: 1px;
   background: var(--caret-color);
+  opacity: 1;
   animation: typing-cursor-blink 1s ease-in-out infinite;
-  transition: transform 80ms cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform, opacity;
+  transition: transform 120ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  will-change: transform;
   pointer-events: none;
+  contain: layout style;
+}
+
+/* Pause blink while actively typing — solid caret */
+.typing-caret.typing-active {
+  animation: none;
+  opacity: 1;
 }
 
 @keyframes typing-cursor-blink {
   0%, 40% { opacity: 1; }
   50% { opacity: 0; }
   60%, 100% { opacity: 1; }
+}
+
+/* ── Slide-up transition when text passage changes ── */
+.typing-slide-wrapper {
+  position: relative;
+}
+
+.typing-slide-up {
+  animation: slideUpIn 250ms cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+@keyframes slideUpIn {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Focus ring — none, monkeytype has no visible focus ring */
