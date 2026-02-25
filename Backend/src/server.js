@@ -34,7 +34,7 @@ app.use('/api/user', userRoutes);
 const distPath = path.join(rootDir, "Frontend", "dist");
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
-  app.get("*", (req, res) => {
+  app.get("/{*splat}", (req, res) => {
     res.sendFile(path.join(distPath, "index.html"));
   });
 }
