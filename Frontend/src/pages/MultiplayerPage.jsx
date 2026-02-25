@@ -710,7 +710,7 @@ const MultiplayerPage = () => {
               onKeyDown={handleTyping}
               className="typing-area cursor-text rounded-lg py-4"
             >
-              <div className="overflow-hidden text-2xl leading-[1.75]">
+              <div className="overflow-visible pt-6 text-2xl leading-[1.75]">
                 <TypingPrompt
                   text={raceText}
                   userInput={userInput}
