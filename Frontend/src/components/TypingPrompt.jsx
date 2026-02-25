@@ -1,6 +1,13 @@
 import React, { useCallback, useLayoutEffect, useRef, useEffect } from "react";
 
-const TypingPrompt = ({ text, userInput }) => {
+const OPPONENT_COLORS = [
+  "#e06c75",
+  "#61afef",
+  "#c678dd",
+  "#56b6c2",
+];
+
+const TypingPrompt = ({ text, userInput, opponents = [] }) => {
   const containerRef = useRef(null);
   const endRef = useRef(null);
   const charRefs = useRef([]);
@@ -100,8 +107,51 @@ const TypingPrompt = ({ text, userInput }) => {
 
         {/* Caret — positioned via ref, no state re-render */}
         <span ref={caretRef} className="typing-caret" />
+
+        {/* Opponent cursors */}
+        {opponents.map((opp, i) => (
+          <OpponentCaret
+            key={opp.id}
+            charRefs={charRefs}
+            endRef={endRef}
+            textLength={text.length}
+            cursorIndex={Math.min(opp.cursorIndex || 0, text.length)}
+            username={opp.username}
+            color={OPPONENT_COLORS[i % OPPONENT_COLORS.length]}
+          />
+        ))}
       </div>
     </div>
+  );
+};
+
+/* ── Opponent caret rendered via direct DOM positioning ── */
+const OpponentCaret = ({ charRefs, endRef, textLength, cursorIndex, username, color }) => {
+  const caretEl = useRef(null);
+
+  useLayoutEffect(() => {
+    const el = caretEl.current;
+    const target =
+      cursorIndex >= textLength
+        ? endRef.current
+        : charRefs.current?.[cursorIndex];
+
+    if (!el || !target) return;
+
+    el.style.transform = `translate(${target.offsetLeft}px, ${target.offsetTop}px)`;
+    el.style.height = `${target.offsetHeight || 40}px`;
+  }, [cursorIndex, textLength, charRefs, endRef]);
+
+  return (
+    <span
+      ref={caretEl}
+      className="opponent-caret"
+      style={{ background: color }}
+    >
+      <span className="opponent-label" style={{ background: color }}>
+        {username}
+      </span>
+    </span>
   );
 };
 
