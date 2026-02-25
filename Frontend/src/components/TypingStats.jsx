@@ -33,12 +33,7 @@ const StatBlock = ({ label, value, suffix = "", delay = 0, large = false }) => (
   </div>
 );
 
-const TypingStats = ({ wpm, accuracy, time, raw, characters }) => {
-  const incorrect = characters
-    ? Math.max(0, characters - Math.round((characters * accuracy) / 100))
-    : 0;
-  const correct = characters ? characters - incorrect : 0;
-
+const TypingStats = ({ wpm, accuracy, time, raw, correct = 0, incorrect = 0, extra = 0, missed = 0 }) => {
   return (
     <div>
       {/* ── Primary stats: big WPM + ACC ── */}
@@ -64,23 +59,21 @@ const TypingStats = ({ wpm, accuracy, time, raw, characters }) => {
         {raw !== undefined && (
           <StatBlock label="raw" value={raw} delay={200} />
         )}
-        {characters !== undefined && (
-          <StatBlock
-            label="characters"
-            value={
-              <span className="flex items-center gap-1">
-                <span style={{ color: "var(--text-color)" }}>{correct}</span>
-                <span style={{ color: "var(--sub-color)" }}>/</span>
-                <span style={{ color: "var(--error-color)" }}>{incorrect}</span>
-                <span style={{ color: "var(--sub-color)" }}>/</span>
-                <span style={{ color: "var(--sub-color)" }}>0</span>
-                <span style={{ color: "var(--sub-color)" }}>/</span>
-                <span style={{ color: "var(--sub-color)" }}>0</span>
-              </span>
-            }
-            delay={240}
-          />
-        )}
+        <StatBlock
+          label="characters"
+          value={
+            <span className="flex items-center gap-1">
+              <span style={{ color: "var(--text-color)" }}>{correct}</span>
+              <span style={{ color: "var(--sub-color)" }}>/</span>
+              <span style={{ color: "var(--error-color)" }}>{incorrect}</span>
+              <span style={{ color: "var(--sub-color)" }}>/</span>
+              <span style={{ color: "var(--sub-alt-color)" }}>{extra}</span>
+              <span style={{ color: "var(--sub-color)" }}>/</span>
+              <span style={{ color: "var(--sub-color)" }}>{missed}</span>
+            </span>
+          }
+          delay={240}
+        />
         <StatBlock label="time" value={`${time}s`} delay={280} />
       </div>
     </div>
