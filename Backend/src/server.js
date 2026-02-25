@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
 import { connectDB } from "./config/db.js"
+import { initSocket } from "./socket/socket.js"
 
 import userRoutes from "./routes/user.route.js"
 
@@ -19,9 +20,31 @@ app.get('/api/test', (req, res) => {
 
 app.use('/api/user', userRoutes);
 
+const server = initSocket(app);
+
 connectDB().then(() => {
-  //first connect the DB then run the app.
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log("Server started on PORT", PORT);
   });
+});
+
+// ── Graceful shutdown (fixes EADDRINUSE on nodemon restart) ──
+const shutdown = () => {
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(1), 3000);
+};
+
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
+
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(`Port ${PORT} is already in use. Retrying in 2s...`);
+    setTimeout(() => {
+      server.close();
+      server.listen(PORT);
+    }, 2000);
+  } else {
+    throw err;
+  }
 });
