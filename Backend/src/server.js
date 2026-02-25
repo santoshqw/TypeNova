@@ -1,17 +1,25 @@
 import dotenv from "dotenv";
 import express from "express";
 import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
 import cors from "cors";
 import { connectDB } from "./config/db.js"
 import { initSocket } from "./socket/socket.js"
 
 import userRoutes from "./routes/user.route.js"
 
-dotenv.config({ path: path.resolve("Backend", ".env") });
+// __dirname equivalent for ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Project root = two levels up from Backend/src/server.js
+const rootDir = path.resolve(__dirname, "../..");
+
+dotenv.config({ path: path.join(rootDir, "Backend", ".env") });
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const __dirname = path.resolve();
 
 const allowedOrigins = process.env.NODE_ENV === "production"
   ? [process.env.CLIENT_URL].filter(Boolean)
@@ -22,11 +30,12 @@ app.use(express.json());
 
 app.use('/api/user', userRoutes);
 
-// Serve frontend in production
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "Frontend/dist")));
+// Serve frontend — always if the dist folder exists
+const distPath = path.join(rootDir, "Frontend", "dist");
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
   app.get("*", (req, res) => {
-    res.sendFile(path.resolve(__dirname, "Frontend/dist/index.html"));
+    res.sendFile(path.join(distPath, "index.html"));
   });
 }
 
