@@ -340,14 +340,11 @@ export const initSocket = (app) => {
 
       // Check if player finished
       if (progress >= 100) {
-        player.finished = true;
-        player.finishTime = Date.now() - room.startTime;
-        // Calculate position
-        let pos = 1;
-        room.players.forEach((p) => {
-          if (p.finished && p !== player) pos++;
-        });
-        player.position = pos;
+        if (!player.finished) { // only set finish time once
+          player.finished = true;
+          player.finishTime = Date.now() - room.startTime;
+          // Position is now calculated on the client
+        }
       }
 
       broadcastRoomState(roomId);
