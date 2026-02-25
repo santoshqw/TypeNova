@@ -4,7 +4,7 @@ const TypingPrompt = ({ text, userInput }) => {
   const containerRef = useRef(null);
   const endRef = useRef(null);
   const charRefs = useRef([]);
-  const [caretPosition, setCaretPosition] = useState({ x: 0, y: 0, height: 48 });
+  const [caretPosition, setCaretPosition] = useState({ x: 0, y: 0, height: 40 });
 
   const cursorIndex = Math.min(userInput.length, text.length);
   const typedText = text.slice(0, userInput.length);
@@ -21,13 +21,14 @@ const TypingPrompt = ({ text, userInput }) => {
     setCaretPosition({
       x: targetElement.offsetLeft,
       y: targetElement.offsetTop,
-      height: targetElement.offsetHeight || 48,
+      height: targetElement.offsetHeight || 40,
     });
   }, [cursorIndex, text]);
 
   return (
-    <div ref={containerRef} className="typing-prompt relative">
-      <p className="text-zinc-400">
+    <div ref={containerRef} className="typing-prompt relative select-none">
+      {/* Ghost text — untyped characters in sub color */}
+      <p style={{ color: 'var(--sub-color)' }}>
         {text.split("").map((character, index) => (
           <span
             key={`${character}-${index}`}
@@ -42,14 +43,16 @@ const TypingPrompt = ({ text, userInput }) => {
         <span ref={endRef} className="typing-char" />
       </p>
 
-      <p className="typing-overlay absolute inset-0 text-zinc-700" aria-hidden="true">
+      {/* Typed overlay */}
+      <p className="typing-overlay absolute inset-0" aria-hidden="true">
         {typedText.split("").map((character, index) => {
           const isWrong = userInput[index] !== text[index];
 
           return (
             <span
               key={`${character}-${index}`}
-              className={`typing-char ${isWrong ? "rounded bg-red-100 text-red-700" : ""}`}
+              className="typing-char"
+              style={{ color: isWrong ? 'var(--error-color)' : 'var(--text-color)' }}
             >
               {character}
             </span>
@@ -57,6 +60,7 @@ const TypingPrompt = ({ text, userInput }) => {
         })}
       </p>
 
+      {/* Caret */}
       <span
         className="typing-caret"
         style={{

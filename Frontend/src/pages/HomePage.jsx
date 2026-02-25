@@ -9,7 +9,7 @@ const TEST_TEXTS = [
   "Great typing comes from smooth movement, not force. Press gently, recover quickly from mistakes, and stay relaxed through every line.",
   "Consistency beats short bursts. Keep a stable pace, breathe normally, and focus on finishing each sentence with clean accuracy.",
 ];
-const TEST_DURATION = 60;
+const DURATION_OPTIONS = [15, 30, 60, 120];
 
 const countCorrectCharacters = (typedText, sourceText) => {
   return typedText.split("").reduce((total, character, index) => {
@@ -24,7 +24,8 @@ const countCorrectCharacters = (typedText, sourceText) => {
 const HomePage = () => {
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [userInput, setUserInput] = useState("");
-  const [timeLeft, setTimeLeft] = useState(TEST_DURATION);
+  const [duration, setDuration] = useState(60);
+  const [timeLeft, setTimeLeft] = useState(60);
   const [isRunning, setIsRunning] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
   const [graphData, setGraphData] = useState([]);
@@ -52,14 +53,24 @@ const HomePage = () => {
   );
 
   const wpm = useMemo(() => {
-    const elapsedMinutes = (TEST_DURATION - timeLeft) / 60;
+    const elapsedMinutes = (duration - timeLeft) / 60;
+
+    if (!elapsedMinutes) {
+      return 0;
+    }
+
+    return Math.round(totalCorrect / 5 / elapsedMinutes);
+  }, [timeLeft, totalCorrect, duration]);
+
+  const rawWpm = useMemo(() => {
+    const elapsedMinutes = (duration - timeLeft) / 60;
 
     if (!elapsedMinutes) {
       return 0;
     }
 
     return Math.round(totalTyped / 5 / elapsedMinutes);
-  }, [timeLeft, totalTyped]);
+  }, [timeLeft, totalTyped, duration]);
 
   const accuracy = useMemo(() => {
     if (!totalTyped) {
@@ -80,10 +91,13 @@ const HomePage = () => {
     }
 
     const currentTotalTyped = totalTypedRef.current;
-    const currentWpm = Math.round((currentTotalTyped / 5) * (60 / elapsedSeconds));
+    const currentTotalCorrect = totalCorrectRef.current;
+    const currentErrors = currentTotalTyped - currentTotalCorrect;
+    const currentWpm = Math.round((currentTotalCorrect / 5) * (60 / elapsedSeconds));
+    const currentRaw = Math.round((currentTotalTyped / 5) * (60 / elapsedSeconds));
     const currentAccuracy =
       currentTotalTyped > 0
-        ? Math.round((totalCorrectRef.current / currentTotalTyped) * 100)
+        ? Math.round((currentTotalCorrect / currentTotalTyped) * 100)
         : 0;
 
     setGraphData((previousData) => {
@@ -93,13 +107,18 @@ const HomePage = () => {
         return previousData;
       }
 
+      const prevErrors = lastPoint ? lastPoint.totalErrors : 0;
+      const errorsThisSecond = Math.max(0, currentErrors - prevErrors);
+
       return [
         ...previousData,
         {
           second: elapsedSeconds,
           wpm: currentWpm,
+          raw: currentRaw,
           accuracy: currentAccuracy,
-          chars: currentTotalTyped,
+          errors: errorsThisSecond,
+          totalErrors: currentErrors,
         },
       ];
     });
@@ -113,7 +132,7 @@ const HomePage = () => {
     const interval = setInterval(() => {
       setTimeLeft((previousTime) => {
         const nextTime = previousTime - 1;
-        const elapsedSeconds = TEST_DURATION - Math.max(0, nextTime);
+        const elapsedSeconds = duration - Math.max(0, nextTime);
         appendGraphPoint(elapsedSeconds);
 
         if (previousTime <= 1) {
@@ -135,9 +154,9 @@ const HomePage = () => {
       return;
     }
 
-    const elapsedSeconds = TEST_DURATION - timeLeft;
+    const elapsedSeconds = duration - timeLeft;
     appendGraphPoint(elapsedSeconds);
-  }, [isFinished, totalTyped, timeLeft]);
+  }, [isFinished, totalTyped, timeLeft, duration]);
 
   const handleTyping = (event) => {
     if (isFinished) {
@@ -183,7 +202,22 @@ const HomePage = () => {
   const handleRestart = () => {
     setCurrentTextIndex(0);
     setUserInput("");
-    setTimeLeft(TEST_DURATION);
+    setTimeLeft(duration);
+    setIsRunning(false);
+    setIsFinished(false);
+    setGraphData([]);
+    setCompletedTyped(0);
+    setCompletedCorrect(0);
+    totalTypedRef.current = 0;
+    totalCorrectRef.current = 0;
+    typingBoxRef.current?.focus();
+  };
+
+  const handleDurationChange = (newDuration) => {
+    setDuration(newDuration);
+    setTimeLeft(newDuration);
+    setCurrentTextIndex(0);
+    setUserInput("");
     setIsRunning(false);
     setIsFinished(false);
     setGraphData([]);
@@ -195,49 +229,145 @@ const HomePage = () => {
   };
 
   return (
-    <main className="min-h-screen bg-zinc-100">
-      <div className="flex min-h-screen w-full flex-col gap-6 px-6 py-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-zinc-900">Typing Test</h1>
-            <p className="mt-1 text-zinc-600">Type the text below before the timer ends.</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-center shadow-sm">
-              <p className="text-xs uppercase tracking-wide text-zinc-500">Time</p>
-              <p className="text-xl font-semibold text-zinc-900">{timeLeft}s</p>
+    <main className="flex min-h-screen flex-col" style={{ background: 'var(--bg-color)' }}>
+      {/* ── Header ── */}
+      <header className="mx-auto flex w-full max-w-[850px] items-center justify-between px-8 pt-8 pb-2">
+        <div className="flex items-center gap-2 select-none">
+          <svg className="h-7 w-7" style={{ color: 'var(--main-color)' }} viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+          </svg>
+          <span className="text-2xl font-bold tracking-tight" style={{ color: 'var(--text-color)' }}>
+            type<span style={{ color: 'var(--main-color)' }}>nova</span>
+          </span>
+        </div>
+
+        <nav className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={handleRestart}
+            className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors hover:opacity-80"
+            style={{ color: 'var(--sub-color)' }}
+            title="Restart test (Tab + Enter)"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182M2.985 19.644l3.181-3.183" />
+            </svg>
+          </button>
+        </nav>
+      </header>
+
+      {/* ── Main content ── */}
+      <div className="mx-auto flex w-full max-w-[850px] flex-1 flex-col justify-center px-8">
+
+        {/* ── Mode selector (only when not running / not finished) ── */}
+        {!isRunning && !isFinished && (
+          <div className="mb-4 flex items-center justify-center gap-2 animate-fade-in">
+            <div
+              className="flex items-center gap-1 rounded-lg px-3 py-2"
+              style={{ background: 'var(--sub-alt-color)' }}
+            >
+              <span className="mr-2 text-xs" style={{ color: 'var(--sub-color)' }}>time</span>
+              {DURATION_OPTIONS.map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => handleDurationChange(opt)}
+                  className="rounded-md px-3 py-1 text-sm font-medium transition-colors"
+                  style={{
+                    color: duration === opt ? 'var(--main-color)' : 'var(--sub-color)',
+                    background: duration === opt ? 'var(--bg-color)' : 'transparent',
+                  }}
+                >
+                  {opt}
+                </button>
+              ))}
             </div>
+          </div>
+        )}
+
+        {/* ── Timer (visible when running) ── */}
+        {isRunning && !isFinished && (
+          <div className="mb-2">
+            <span className="text-2xl font-semibold tabular-nums" style={{ color: 'var(--main-color)' }}>
+              {timeLeft}
+            </span>
+          </div>
+        )}
+
+        {/* ── Results (after finish) ── */}
+        {isFinished && (
+          <div className="mb-6 animate-fade-in">
+            <TypingStats
+              wpm={wpm}
+              accuracy={accuracy}
+              time={duration}
+              raw={rawWpm}
+              characters={totalTyped}
+            />
+            <TypingGraph data={graphData} showAfterComplete={isFinished} />
+          </div>
+        )}
+
+        {/* ── Typing area ── */}
+        {!isFinished && (
+          <div
+            ref={typingBoxRef}
+            tabIndex={0}
+            onKeyDown={handleTyping}
+            className="typing-area cursor-text rounded-lg py-4"
+          >
+            <div className="overflow-hidden text-2xl leading-[1.75]">
+              <TypingPrompt text={currentText} userInput={userInput} />
+            </div>
+          </div>
+        )}
+
+        {/* ── Bottom actions ── */}
+        {isFinished && (
+          <div
+            className="mt-8 flex justify-center animate-fade-in"
+            style={{ animationDelay: "400ms", opacity: 0 }}
+          >
             <button
               type="button"
               onClick={handleRestart}
-              className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800"
+              className="group flex items-center gap-2.5 rounded-lg px-6 py-3 text-sm font-medium transition-all duration-200"
+              style={{
+                color: "var(--text-color)",
+                background: "var(--sub-alt-color)",
+                border: "1px solid rgba(100,102,105,0.12)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(226,183,20,0.1)";
+                e.currentTarget.style.borderColor = "rgba(226,183,20,0.25)";
+                e.currentTarget.style.color = "var(--main-color)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "var(--sub-alt-color)";
+                e.currentTarget.style.borderColor = "rgba(100,102,105,0.12)";
+                e.currentTarget.style.color = "var(--text-color)";
+              }}
             >
-              Restart
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182M2.985 19.644l3.181-3.183" />
+              </svg>
+              Next Test
             </button>
           </div>
-        </div>
-
-        {isFinished && <TypingStats timeLeft={timeLeft} wpm={wpm} accuracy={accuracy} isFinished={isFinished} />}
-
-        <div
-          ref={typingBoxRef}
-          tabIndex={0}
-          onKeyDown={handleTyping}
-          className="flex-1 rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm outline-none ring-indigo-300 transition focus:ring-2"
-        >
-          <div className="h-full overflow-y-auto text-5xl leading-[1.6] text-zinc-700">
-            <TypingPrompt text={currentText} userInput={userInput} />
-          </div>
-        </div>
-
-        <TypingGraph data={graphData} showAfterComplete={isFinished} />
-
-        <p className="text-sm text-zinc-600">
-          {isFinished
-            ? "Test finished. WPM, Accuracy, and Character graph are shown above."
-            : "Click the large typing area and keep typing; results will appear after completion."}
-        </p>
+        )}
       </div>
+
+      {/* ── Footer ── */}
+      <footer className="mx-auto w-full max-w-[850px] px-8 py-4">
+        <div className="flex items-center justify-between text-xs" style={{ color: 'var(--sub-color)' }}>
+          <span>
+            <kbd className="rounded px-1 py-0.5 text-[10px]" style={{ background: 'var(--sub-alt-color)', color: 'var(--sub-color)' }}>tab</kbd>
+            {" + "}
+            <kbd className="rounded px-1 py-0.5 text-[10px]" style={{ background: 'var(--sub-alt-color)', color: 'var(--sub-color)' }}>enter</kbd>
+            {" - restart test"}
+          </span>
+        </div>
+      </footer>
     </main>
   );
 };

@@ -1,41 +1,91 @@
 @import "tailwindcss";
 
+/* ── MonkeyType-style palette ── */
+:root {
+  --bg-color: #323437;
+  --sub-color: #646669;
+  --main-color: #e2b714;
+  --text-color: #d1d0c5;
+  --error-color: #ca4754;
+  --error-extra-color: #7e2a33;
+  --sub-alt-color: #2c2e31;
+  --caret-color: #e2b714;
+}
+
+body {
+  font-family: 'Lexend Deca', system-ui, -apple-system, sans-serif;
+  background: var(--bg-color);
+  color: var(--text-color);
+  overflow-x: hidden;
+}
+
 .typing-prompt {
-	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-	white-space: pre-wrap;
-	word-break: break-word;
+  font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.75;
+  letter-spacing: 0.03em;
 }
 
 .typing-overlay {
-	white-space: pre-wrap;
-	word-break: break-word;
-	pointer-events: none;
+  white-space: pre-wrap;
+  word-break: break-word;
+  pointer-events: none;
+  line-height: 1.75;
+  letter-spacing: 0.03em;
 }
 
 .typing-char {
-	position: relative;
+  position: relative;
 }
 
 .typing-caret {
-	position: absolute;
-	left: 0;
-	top: 0;
-	width: 2px;
-	background: #18181b;
-	animation: typing-cursor-blink 0.9s step-end infinite;
-	transition: transform 90ms linear;
-	will-change: transform, opacity;
-	pointer-events: none;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 3px;
+  border-radius: 1px;
+  background: var(--caret-color);
+  animation: typing-cursor-blink 1s ease-in-out infinite;
+  transition: transform 80ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, opacity;
+  pointer-events: none;
 }
 
 @keyframes typing-cursor-blink {
-	0%,
-	45% {
-		opacity: 1;
-	}
+  0%, 40% { opacity: 1; }
+  50% { opacity: 0; }
+  60%, 100% { opacity: 1; }
+}
 
-	46%,
-	100% {
-		opacity: 0;
-	}
+/* Focus ring — none, monkeytype has no visible focus ring */
+.typing-area:focus {
+  outline: none;
+}
+
+/* Smooth page transitions */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-delay-100 { animation-delay: 0.1s; opacity: 0; }
+.animate-delay-200 { animation-delay: 0.2s; opacity: 0; }
+.animate-delay-300 { animation-delay: 0.3s; opacity: 0; }
+.animate-delay-400 { animation-delay: 0.4s; opacity: 0; }
+.animate-delay-500 { animation-delay: 0.5s; opacity: 0; }
+
+/* Result number animation */
+@keyframes countUp {
+  from { opacity: 0; transform: scale(0.85) translateY(6px); }
+  60% { transform: scale(1.02) translateY(-1px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.animate-count-up {
+  animation: countUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
