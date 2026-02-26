@@ -109,6 +109,23 @@ const checkAllFinished = (roomId) => {
   const room = rooms.get(roomId);
   if (!room || room.status !== "racing") return;
 
+  // If only one player remains, end the race immediately
+  if (room.players.size <= 1) {
+    clearInterval(room.raceTimer);
+    let pos = 1;
+    room.players.forEach((p) => { if (p.finished) pos++; });
+    room.players.forEach((p) => {
+      if (!p.finished) {
+        p.finished = true;
+        p.finishTime = Date.now() - room.startTime;
+        p.position = pos++;
+      }
+    });
+    room.status = "finished";
+    broadcastRoomState(roomId);
+    return;
+  }
+
   let allDone = true;
   room.players.forEach((p) => {
     if (!p.finished) allDone = false;
@@ -168,8 +185,8 @@ export const initSocket = (app) => {
         timer: null,
         raceTimer: null,
         startTime: null,
-        duration: 60,
-        timeLeft: 60,
+        duration: 30,
+        timeLeft: 30,
       };
       room.hostId = socket.id;
       room.players.set(socket.id, {

@@ -5,27 +5,18 @@ const StatBlock = ({ label, value, suffix = "", delay = 0, large = false }) => (
     className="animate-fade-in"
     style={{ animationDelay: `${delay}ms`, opacity: 0 }}
   >
-    <p
-      className="mb-1 text-xs font-medium tracking-wide"
-      style={{ color: "var(--sub-color)", letterSpacing: "0.08em" }}
-    >
+    <p className="mb-1 text-[11px] font-medium uppercase tracking-widest text-sub">
       {label}
     </p>
     <p
       className={`animate-count-up font-semibold leading-none tabular-nums ${
-        large ? "text-[3.5rem]" : "text-lg"
+        large ? "text-[2.8rem] text-main sm:text-[3.5rem]" : "text-lg text-text"
       }`}
-      style={{
-        color: large ? "var(--main-color)" : "var(--text-color)",
-        animationDelay: `${delay + 50}ms`,
-      }}
+      style={{ animationDelay: `${delay + 50}ms` }}
     >
       {value}
       {suffix && (
-        <span
-          className={large ? "text-2xl" : "text-sm"}
-          style={{ color: large ? "var(--main-color)" : "var(--sub-color)" }}
-        >
+        <span className={large ? "text-xl text-main sm:text-2xl" : "text-sm text-sub"}>
           {suffix}
         </span>
       )}
@@ -33,28 +24,11 @@ const StatBlock = ({ label, value, suffix = "", delay = 0, large = false }) => (
   </div>
 );
 
-const TypingStats = ({ wpm, accuracy, time, raw, correct = 0, incorrect = 0, extra = 0, missed = 0 }) => {
+const TypingStats = ({ time, raw, correct = 0, incorrect = 0, extra = 0, missed = 0 }) => {
   return (
-    <div>
-      {/* ── Primary stats: big WPM + ACC ── */}
-      <div className="mb-6 flex items-end gap-10">
-        <StatBlock label="wpm" value={wpm} large delay={0} />
-        <StatBlock label="acc" value={accuracy} suffix="%" large delay={80} />
-      </div>
-
-      {/* ── Divider ── */}
-      <div
-        className="mb-5 h-px w-full animate-fade-in"
-        style={{
-          background:
-            "linear-gradient(90deg, var(--sub-alt-color) 0%, #3a3c3f 50%, var(--sub-alt-color) 100%)",
-          animationDelay: "150ms",
-          opacity: 0,
-        }}
-      />
-
+    <div className="mt-4">
       {/* ── Secondary stats row ── */}
-      <div className="flex flex-wrap gap-x-10 gap-y-3">
+      <div className="flex flex-wrap justify-center gap-x-6 gap-y-3 sm:gap-x-10">
         <StatBlock label="test type" value={`time ${time}`} delay={160} />
         {raw !== undefined && (
           <StatBlock label="raw" value={raw} delay={200} />
@@ -63,13 +37,13 @@ const TypingStats = ({ wpm, accuracy, time, raw, correct = 0, incorrect = 0, ext
           label="characters"
           value={
             <span className="flex items-center gap-1">
-              <span style={{ color: "var(--text-color)" }}>{correct}</span>
-              <span style={{ color: "var(--sub-color)" }}>/</span>
-              <span style={{ color: "var(--error-color)" }}>{incorrect}</span>
-              <span style={{ color: "var(--sub-color)" }}>/</span>
-              <span style={{ color: "var(--sub-alt-color)" }}>{extra}</span>
-              <span style={{ color: "var(--sub-color)" }}>/</span>
-              <span style={{ color: "var(--sub-color)" }}>{missed}</span>
+              <span className="text-text">{correct}</span>
+              <span className="text-sub">/</span>
+              <span className="text-error">{incorrect}</span>
+              <span className="text-sub">/</span>
+              <span className="text-sub-alt">{extra}</span>
+              <span className="text-sub">/</span>
+              <span className="text-sub">{missed}</span>
             </span>
           }
           delay={240}
