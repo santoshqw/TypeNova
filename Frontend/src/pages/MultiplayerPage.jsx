@@ -1,7 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import Layout from "../components/Layout";
 import TypingPrompt from "../components/TypingPrompt";
 import useMultiplayerSocket from "../hooks/useMultiplayerSocket";
+import {
+  Clipboard, Check, Timer, Users, Crown, Flag, Link, User,
+  Sparkles, RotateCcw, LogOut, Trophy, Medal, Clock,
+  Car,
+} from "lucide-react";
 
 const countCorrectCharacters = (typedText, sourceText) => {
   return typedText.split("").reduce((total, character, index) => {
@@ -11,96 +16,107 @@ const countCorrectCharacters = (typedText, sourceText) => {
 };
 
 /* ── Progress bar for a single player ── */
-const PlayerProgress = ({ player, isSelf }) => (
-  <div className="mb-3 last:mb-0">
-    <div className="mb-1 flex items-center justify-between text-xs">
-      <span
-        className="font-medium"
-        style={{ color: isSelf ? "var(--main-color)" : "var(--text-color)" }}
-      >
-        {player.username}
-        {isSelf && " (you)"}
+const PlayerProgress = ({ player, isSelf, showStats = true }) => (
+  <div className="mb-4 last:mb-0">
+    <div className="mb-1.5 flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <div
+          className="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold uppercase"
+          style={{
+            background: isSelf ? "var(--main-color)" : "var(--sub-alt-color)",
+            color: isSelf ? "var(--bg-color)" : "var(--sub-color)",
+          }}
+        >
+          {player.username.charAt(0)}
+        </div>
+        <span className={`text-sm font-medium ${isSelf ? "text-main" : "text-text"}`}>
+          {player.username}
+          {isSelf && <span className="ml-1 text-xs text-sub">(you)</span>}
+        </span>
         {player.position && (
-          <span
-            className="ml-2 rounded px-1.5 py-0.5 text-[10px] font-bold"
-            style={{ background: "var(--main-color)", color: "var(--bg-color)" }}
-          >
-            #{player.position}
+          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-main text-[10px] font-bold text-bg">
+            {player.position}
           </span>
         )}
-      </span>
-      <span style={{ color: "var(--sub-color)" }}>
-        {player.wpm} wpm · {player.accuracy}%
-      </span>
+      </div>
+      {showStats && (
+        <div className="flex items-center gap-3 text-xs tabular-nums">
+          <span className="font-semibold text-main">{player.wpm} <span className="font-normal text-sub">wpm</span></span>
+          <span className="text-sub">{player.accuracy}%</span>
+        </div>
+      )}
     </div>
-    <div
-      className="h-2 w-full overflow-hidden rounded-full"
-      style={{ background: "var(--sub-alt-color)" }}
-    >
-      <div
-        className="h-full rounded-full transition-all duration-300"
-        style={{
-          width: `${Math.min(100, player.progress)}%`,
-          background: isSelf ? "var(--main-color)" : "var(--sub-color)",
-        }}
-      />
+    <div className="flex items-center gap-2">
+      <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-sub-alt">
+        <div
+          className="h-full rounded-full transition-all duration-300"
+          style={{
+            width: `${Math.min(100, player.progress)}%`,
+            background: isSelf
+              ? "linear-gradient(90deg, var(--main-color), #f0d050)"
+              : "var(--sub-color)",
+            boxShadow: isSelf ? "0 0 8px rgba(226, 183, 20, 0.3)" : "none",
+          }}
+        />
+      </div>
+      <span className={`min-w-[2.5rem] text-right text-xs font-semibold tabular-nums ${isSelf ? "text-main" : "text-sub"}`}>
+        {Math.min(100, player.progress)}%
+      </span>
     </div>
   </div>
 );
 
 const DURATION_OPTIONS = [15, 30, 60, 120];
 
+/* ── Copy button with feedback ── */
+const CopyButton = ({ text }) => {
+  const [copied, setCopied] = React.useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className={`ml-3 rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all duration-200 ${
+        copied
+          ? "bg-success/20 text-success"
+          : "bg-surface text-sub hover:bg-main/10 hover:text-main"
+      }`}
+      title="Copy room code"
+    >
+      {copied ? <><Check className="inline h-3 w-3 mr-1" />Copied</> : <><Clipboard className="inline h-3 w-3 mr-1" />Copy</>}
+    </button>
+  );
+};
+
 /* ── Lobby screen ── */
 const Lobby = ({ roomState, socketId, onStart, onLeave, onToggleReady, onSetDuration, error }) => {
   const players = roomState?.players || [];
   const isHost = roomState?.hostId === socketId;
   const allReady = players.length >= 2 && players.filter((p) => p.id !== roomState?.hostId).every((p) => p.ready);
-  const duration = roomState?.duration || 60;
+  const duration = roomState?.duration || 30;
 
   return (
-    <div className="animate-fade-in">
-      <div className="mb-6 flex items-center gap-4">
-        <div
-          className="rounded-lg px-4 py-2"
-          style={{ background: "var(--sub-alt-color)" }}
-        >
-          <span className="text-xs" style={{ color: "var(--sub-color)" }}>
-            Room Code
-          </span>
-          <p
-            className="text-2xl font-bold tracking-widest"
-            style={{ color: "var(--main-color)" }}
-          >
-            {roomState.roomId}
-          </p>
-        </div>
-        <div style={{ color: "var(--sub-color)" }} className="text-sm">
-          Share this code with your friends to join
-        </div>
-      </div>
-
+    <div className="mx-auto w-full max-w-lg animate-fade-in space-y-6">
       {/* Duration selector — host only */}
-      <div className="mb-6">
-        <p className="mb-2 text-sm" style={{ color: "var(--sub-color)" }}>
-          Race Duration
+      <div>
+        <p className="mb-2 text-[11px] uppercase tracking-widest text-sub">
+          <Timer className="inline h-3 w-3 mr-1" /> Race Duration
         </p>
-        <div
-          className="inline-flex items-center gap-1 rounded-lg px-3 py-2"
-          style={{ background: "var(--sub-alt-color)" }}
-        >
-          <span className="mr-2 text-xs" style={{ color: "var(--sub-color)" }}>time</span>
+        <div className="duration-selector">
+          <span className="mr-1 px-2 text-xs text-sub">time</span>
           {DURATION_OPTIONS.map((opt) => (
             <button
               key={opt}
               type="button"
               disabled={!isHost}
               onClick={() => onSetDuration(opt)}
-              className="rounded-md px-3 py-1 text-sm font-medium transition-colors disabled:cursor-default"
-              style={{
-                color: duration === opt ? "var(--main-color)" : "var(--sub-color)",
-                background: duration === opt ? "var(--bg-color)" : "transparent",
-                opacity: !isHost && duration !== opt ? 0.5 : 1,
-              }}
+              className={`duration-btn ${duration === opt ? "active" : ""}`}
+              style={{ opacity: !isHost && duration !== opt ? 0.5 : 1 }}
             >
               {opt}
             </button>
@@ -108,73 +124,94 @@ const Lobby = ({ roomState, socketId, onStart, onLeave, onToggleReady, onSetDura
         </div>
       </div>
 
-      <div className="mb-6">
-        <p className="mb-3 text-sm" style={{ color: "var(--sub-color)" }}>
-          Players ({players.length}/5)
-        </p>
-        {players.map((p) => (
-          <div
-            key={p.id}
-            className="mb-2 flex items-center justify-between rounded-lg px-4 py-2.5"
-            style={{ background: "var(--sub-alt-color)" }}
-          >
-            <div className="flex items-center gap-2">
+      {/* Divider */}
+      <div className="h-px bg-surface" />
+
+      {/* Players list */}
+      <div>
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-[11px] uppercase tracking-widest text-sub">
+            <Users className="inline h-3 w-3 mr-1" /> Players
+          </p>
+          <span className="rounded-full bg-sub-alt px-2.5 py-0.5 text-[11px] font-medium tabular-nums text-sub">
+            {players.length} / 5
+          </span>
+        </div>
+        <div className="space-y-2">
+          {players.map((p, idx) => {
+            const isSelf = p.id === socketId;
+            const isPlayerHost = p.id === roomState?.hostId;
+            return (
               <div
-                className="h-2 w-2 rounded-full"
-                style={{
-                  background: p.ready ? "#4ade80" : "var(--sub-color)",
-                }}
-              />
-              <span
-                className="text-sm font-medium"
-                style={{
-                  color:
-                    p.id === socketId ? "var(--main-color)" : "var(--text-color)",
-                }}
+                key={p.id}
+                className={`card flex items-center justify-between px-4 py-3 transition-all animate-fade-in animate-delay-${idx}00`}
+                style={isSelf ? { borderColor: "var(--main-color)", boxShadow: "0 0 12px rgba(226, 183, 20, 0.08)" } : undefined}
               >
-                {p.username}
-                {p.id === socketId && " (you)"}
-                {p.id === roomState?.hostId && (
-                  <span
-                    className="ml-2 rounded px-1.5 py-0.5 text-[10px] font-bold"
-                    style={{ background: "var(--main-color)", color: "var(--bg-color)" }}
+                <div className="flex items-center gap-3">
+                  {/* Avatar circle */}
+                  <div
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold uppercase shadow-sm"
+                    style={{
+                      background: isSelf
+                        ? "linear-gradient(135deg, var(--main-color), #f0d050)"
+                        : "var(--sub-alt-color)",
+                      color: isSelf ? "var(--bg-color)" : "var(--sub-color)",
+                    }}
                   >
-                    HOST
+                    {p.username.charAt(0)}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className={`text-sm font-medium leading-tight ${isSelf ? "text-main" : "text-text"}`}>
+                      {p.username}
+                      {isSelf && <span className="ml-1 text-xs text-sub">(you)</span>}
+                    </span>
+                    {isPlayerHost && (
+                      <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-main">
+                        <Crown className="h-3 w-3" /> Host
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`h-2.5 w-2.5 rounded-full transition-colors duration-300 ${p.ready ? "animate-pulse" : ""}`}
+                    style={{ background: p.ready ? "#4ade80" : "var(--sub-color)" }}
+                  />
+                  <span
+                    className="text-xs font-medium transition-colors duration-300"
+                    style={{ color: p.ready ? "#4ade80" : "var(--sub-color)" }}
+                  >
+                    {p.ready ? "Ready" : "Waiting"}
                   </span>
-                )}
-              </span>
-            </div>
-            <span
-              className="text-xs font-medium"
-              style={{ color: p.ready ? "#4ade80" : "var(--sub-color)" }}
-            >
-              {p.ready ? "Ready" : "Not Ready"}
-            </span>
-          </div>
-        ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {error && (
-        <p className="mb-4 text-sm" style={{ color: "var(--error-color)" }}>
+        <div className="rounded-lg bg-error/10 px-4 py-3 text-center text-sm text-error">
           {error}
-        </p>
+        </div>
       )}
 
-      <div className="flex gap-3">
+      {/* Action buttons */}
+      <div className="flex justify-center gap-3 pt-2">
         {!isHost && (
           <button
             type="button"
             onClick={onToggleReady}
-            className="rounded-lg px-6 py-2.5 text-sm font-medium transition-all duration-200 hover:opacity-90"
-            style={{
-              background: players.find((p) => p.id === socketId)?.ready
-                ? "#4ade80"
-                : "var(--sub-alt-color)",
-              color: players.find((p) => p.id === socketId)?.ready
-                ? "var(--bg-color)"
-                : "var(--text-color)",
-              border: "1px solid rgba(100,102,105,0.12)",
-            }}
+            className={`btn ${
+              players.find((p) => p.id === socketId)?.ready
+                ? "btn-primary"
+                : "btn-secondary"
+            }`}
+            style={
+              players.find((p) => p.id === socketId)?.ready
+                ? { background: "#4ade80", color: "var(--bg-color)", boxShadow: "0 4px 16px rgba(74, 222, 128, 0.2)" }
+                : {}
+            }
           >
             {players.find((p) => p.id === socketId)?.ready ? "✓ Ready" : "Ready Up"}
           </button>
@@ -184,43 +221,96 @@ const Lobby = ({ roomState, socketId, onStart, onLeave, onToggleReady, onSetDura
             type="button"
             onClick={onStart}
             disabled={!allReady}
-            className="rounded-lg px-6 py-2.5 text-sm font-medium transition-all duration-200 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ background: "var(--main-color)", color: "var(--bg-color)" }}
+            className="btn btn-primary"
           >
-            Start Race
+            <Flag className="h-4 w-4" /> Start Race
           </button>
         )}
         <button
           type="button"
           onClick={onLeave}
-          className="rounded-lg px-6 py-2.5 text-sm font-medium transition-all duration-200"
-          style={{
-            background: "var(--sub-alt-color)",
-            color: "var(--sub-color)",
-          }}
+          className="btn btn-ghost"
         >
           Leave
         </button>
+      </div>
+
+      {/* Divider */}
+      <div className="h-px bg-surface" />
+
+      {/* Room Code — below action buttons */}
+      <div className="text-center">
+        <p className="mb-2 text-[11px] uppercase tracking-widest text-sub">
+          <Link className="inline h-3 w-3 mr-1" /> Room Code
+        </p>
+        <div className="inline-flex items-center rounded-xl bg-sub-alt px-6 py-3 shadow-sm">
+          <span className="font-mono text-3xl font-bold tracking-[0.3em] text-main sm:text-4xl">
+            {roomState.roomId}
+          </span>
+          <CopyButton text={roomState.roomId} />
+        </div>
+        <p className="mt-2 text-xs text-sub">
+          Share this code with friends to join the race
+        </p>
       </div>
     </div>
   );
 };
 
 /* ── Countdown overlay ── */
-const Countdown = ({ count }) => (
-  <div className="flex flex-col items-center justify-center py-16">
-    <p className="mb-2 text-sm" style={{ color: "var(--sub-color)" }}>
-      Race starts in
-    </p>
-    <span
-      className="text-7xl font-bold tabular-nums animate-count-up"
-      style={{ color: "var(--main-color)" }}
-      key={count}
-    >
-      {count}
-    </span>
-  </div>
-);
+const Countdown = ({ count }) => {
+  const total = 3;
+  const radius = 70;
+  const stroke = 6;
+  const circumference = 2 * Math.PI * radius;
+  const progressOffset = circumference - ((total - count + 1) / total) * circumference;
+
+  return (
+    <div className="flex flex-col items-center justify-center py-24">
+      <p className="mb-8 text-sm font-medium uppercase tracking-[0.25em] text-sub">
+        Race starts in
+      </p>
+      <div className="relative flex items-center justify-center" style={{ width: 180, height: 180 }}>
+        {/* Background circle */}
+        <svg className="absolute inset-0" width="180" height="180" viewBox="0 0 180 180">
+          <circle
+            cx="90"
+            cy="90"
+            r={radius}
+            fill="none"
+            stroke="var(--sub-alt-color)"
+            strokeWidth={stroke}
+          />
+          <circle
+            cx="90"
+            cy="90"
+            r={radius}
+            fill="none"
+            stroke="var(--main-color)"
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={progressOffset}
+            className="countdown-ring"
+            style={{
+              transformOrigin: "center",
+              transform: "rotate(-90deg)",
+              filter: "drop-shadow(0 0 6px rgba(226, 183, 20, 0.4))",
+            }}
+          />
+        </svg>
+        {/* Number */}
+        <span
+          className="relative text-7xl font-black tabular-nums text-main animate-count-up"
+          key={count}
+        >
+          {count}
+        </span>
+      </div>
+      <p className="mt-8 text-xs text-sub">Get ready to type!</p>
+    </div>
+  );
+};
 
 /* ── Results screen ── */
 const RaceResults = ({ players, socketId, isHost, onPlayAgain, onLeave }) => {
@@ -231,93 +321,84 @@ const RaceResults = ({ players, socketId, isHost, onPlayAgain, onLeave }) => {
     return b.progress - a.progress;
   });
 
+  const medalIcons = [Trophy, Medal, Medal];
+  const medalColors = ["var(--main-color)", "#c0c0c0", "#cd7f32"];
+  const positionColors = ["var(--main-color)", "#c0c0c0", "#cd7f32"];
+
   return (
-    <div className="animate-fade-in">
-      <h2
-        className="mb-6 text-2xl font-bold"
-        style={{ color: "var(--main-color)" }}
-      >
-        Race Results
+    <div className="mx-auto w-full max-w-lg animate-fade-in">
+      <h2 className="mb-2 text-center text-2xl font-bold text-main flex items-center justify-center gap-2">
+        <Flag className="h-6 w-6" /> Race Results
       </h2>
+      <p className="mb-8 text-center text-xs text-sub">Final standings</p>
 
-      {sorted.map((p, idx) => (
-        <div
-          key={p.id}
-          className="mb-3 flex items-center justify-between rounded-lg px-5 py-3"
-          style={{
-            background: "var(--sub-alt-color)",
-            border:
-              p.id === socketId
-                ? "1px solid var(--main-color)"
-                : "1px solid transparent",
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <span
-              className="text-lg font-bold tabular-nums"
+      <div className="space-y-3">
+        {sorted.map((p, idx) => {
+          const isSelf = p.id === socketId;
+          const isWinner = idx === 0 && p.position === 1;
+          return (
+            <div
+              key={p.id}
+              className={`card flex flex-col gap-3 px-5 py-4 transition-all sm:flex-row sm:items-center sm:justify-between animate-fade-in animate-delay-${Math.min(idx, 5)}00`}
               style={{
-                color:
-                  idx === 0 ? "var(--main-color)" : "var(--sub-color)",
-                width: "2rem",
+                borderColor: isWinner
+                  ? "var(--main-color)"
+                  : isSelf
+                    ? "rgba(226, 183, 20, 0.4)"
+                    : undefined,
+                boxShadow: isWinner ? "0 0 20px rgba(226, 183, 20, 0.1)" : undefined,
               }}
             >
-              #{p.position || "–"}
-            </span>
-            <span
-              className="font-medium"
-              style={{
-                color:
-                  p.id === socketId
-                    ? "var(--main-color)"
-                    : "var(--text-color)",
-              }}
-            >
-              {p.username}
-              {p.id === socketId && " (you)"}
-            </span>
-          </div>
-          <div className="flex gap-6 text-sm">
-            <span style={{ color: "var(--text-color)" }}>
-              {p.wpm}{" "}
-              <span style={{ color: "var(--sub-color)" }}>wpm</span>
-            </span>
-            <span style={{ color: "var(--text-color)" }}>
-              {p.accuracy}
-              <span style={{ color: "var(--sub-color)" }}>%</span>
-            </span>
-            {p.finishTime != null && (
-              <span style={{ color: "var(--sub-color)" }}>
-                {(p.finishTime / 1000).toFixed(1)}s
-              </span>
-            )}
-          </div>
-        </div>
-      ))}
+              <div className="flex items-center gap-3">
+                {/* Position indicator */}
+                <span
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold shadow-sm"
+                  style={{
+                    background: idx < 3 && p.position
+                      ? `${positionColors[idx]}20`
+                      : "var(--sub-alt-color)",
+                  }}
+                >
+                  {p.position && idx < 3 ? (
+                    React.createElement(medalIcons[idx], { className: "h-5 w-5", style: { color: medalColors[idx] } })
+                  ) : (
+                    <span className="text-sub">#{p.position || "–"}</span>
+                  )}
+                </span>
+                <div className="flex flex-col">
+                  <span className={`font-semibold leading-tight ${isSelf ? "text-main" : "text-text"}`}>
+                    {p.username}
+                    {isSelf && <span className="ml-1 text-xs font-normal text-sub">(you)</span>}
+                  </span>
+                  {p.finishTime != null && (
+                    <span className="text-[11px] tabular-nums text-sub">
+                      <Clock className="inline h-3 w-3 mr-0.5" /> {(p.finishTime / 1000).toFixed(1)}s
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <div className="rounded-lg bg-sub-alt px-3 py-1.5 text-center">
+                  <p className="font-mono text-lg font-bold tabular-nums text-main">{p.wpm}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-sub">wpm</p>
+                </div>
+                <div className="rounded-lg bg-sub-alt px-3 py-1.5 text-center">
+                  <p className="font-mono text-lg font-bold tabular-nums text-text">{p.accuracy}%</p>
+                  <p className="text-[10px] uppercase tracking-wider text-sub">acc</p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
-      <div className="mt-6 flex justify-center gap-3">
+      <div className="mt-8 flex justify-center gap-3">
         {isHost && (
-          <button
-            type="button"
-            onClick={onPlayAgain}
-            className="rounded-lg px-6 py-2.5 text-sm font-medium transition-all duration-200 hover:opacity-90"
-            style={{
-              background: "var(--main-color)",
-              color: "var(--bg-color)",
-            }}
-          >
-            Play Again
+          <button type="button" onClick={onPlayAgain} className="btn btn-primary">
+            <RotateCcw className="h-4 w-4" /> Play Again
           </button>
         )}
-        <button
-          type="button"
-          onClick={onLeave}
-          className="rounded-lg px-6 py-2.5 text-sm font-medium transition-all duration-200 hover:opacity-90"
-          style={{
-            background: "var(--sub-alt-color)",
-            color: "var(--text-color)",
-            border: "1px solid rgba(100,102,105,0.12)",
-          }}
-        >
+        <button type="button" onClick={onLeave} className="btn btn-secondary">
           Leave Room
         </button>
       </div>
@@ -329,7 +410,6 @@ const RaceResults = ({ players, socketId, isHost, onPlayAgain, onLeave }) => {
    MultiplayerPage — main component
    ═══════════════════════════════════════════ */
 const MultiplayerPage = () => {
-  const navigate = useNavigate();
   const {
     connected,
     roomState,
@@ -463,48 +543,19 @@ const MultiplayerPage = () => {
   /* ── Not in a room => show create/join UI ── */
   if (!roomState) {
     return (
-      <main
-        className="flex min-h-screen flex-col"
-        style={{ background: "var(--bg-color)" }}
-      >
-        <header className="mx-auto flex w-full max-w-[850px] items-center justify-between px-8 pt-8 pb-2">
-          <button
-            type="button"
-            onClick={() => navigate("/")}
-            className="flex items-center gap-2 select-none"
-          >
-            <svg
-              className="h-7 w-7"
-              style={{ color: "var(--main-color)" }}
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-            </svg>
-            <span
-              className="text-2xl font-bold tracking-tight"
-              style={{ color: "var(--text-color)" }}
-            >
-              type<span style={{ color: "var(--main-color)" }}>nova</span>
-            </span>
-          </button>
-        </header>
-
-        <div className="mx-auto flex w-full max-w-[850px] flex-1 flex-col items-center justify-center px-8">
-          <h1
-            className="mb-10 text-3xl font-bold"
-            style={{ color: "var(--text-color)" }}
-          >
+      <Layout>
+        <div className="flex flex-1 flex-col items-center justify-center">
+          <h1 className="mb-2 text-2xl font-bold text-text sm:text-3xl">
             Multiplayer Race
           </h1>
+          <p className="mb-10 text-sm text-sub">
+            Compete with friends in real-time typing races
+          </p>
 
           {/* Username input */}
           <div className="mb-8 w-full max-w-md">
-            <label
-              className="mb-1.5 block text-xs font-medium"
-              style={{ color: "var(--sub-color)" }}
-            >
-              Your Name
+            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-widest text-sub">
+              <User className="inline h-3 w-3 mr-1" /> Your Name
             </label>
             <input
               type="text"
@@ -512,75 +563,50 @@ const MultiplayerPage = () => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Enter your name"
-              className="w-full rounded-lg px-4 py-2.5 text-sm outline-none"
-              style={{
-                background: "var(--sub-alt-color)",
-                color: "var(--text-color)",
-                border: "1px solid rgba(100,102,105,0.2)",
-              }}
+              className="input-field w-full"
             />
           </div>
 
           {!connected && (
-            <p className="mb-4 text-sm" style={{ color: "var(--error-color)" }}>
+            <div className="mb-4 rounded-lg bg-error/10 px-4 py-2.5 text-center text-sm text-error">
               Connecting to server...
-            </p>
+            </div>
           )}
 
           {error && (
-            <p className="mb-4 text-sm" style={{ color: "var(--error-color)" }}>
+            <div className="mb-4 rounded-lg bg-error/10 px-4 py-2.5 text-center text-sm text-error">
               {error}
-            </p>
+            </div>
           )}
 
           {/* Two-column: Create Room | Join Room */}
-          <div className="flex w-full max-w-md gap-4">
+          <div className="flex w-full max-w-md flex-col gap-4 sm:flex-row">
             {/* Create Room card */}
-            <div
-              className="flex flex-1 flex-col items-center rounded-xl p-6"
-              style={{ background: "var(--sub-alt-color)" }}
-            >
-              <h2
-                className="mb-1 text-sm font-semibold"
-                style={{ color: "var(--text-color)" }}
-              >
+            <div className="card flex flex-1 flex-col items-center p-6 transition-all hover:border-main/20">
+              <Sparkles className="mb-3 h-6 w-6 text-main" />
+              <h2 className="mb-1 text-sm font-semibold text-text">
                 Create Room
               </h2>
-              <p
-                className="mb-5 text-center text-xs"
-                style={{ color: "var(--sub-color)" }}
-              >
+              <p className="mb-5 text-center text-xs text-sub">
                 Start a new race and invite friends
               </p>
               <button
                 type="button"
                 disabled={!connected || !username.trim()}
                 onClick={() => createRoom(username.trim())}
-                className="w-full rounded-lg px-6 py-2.5 text-sm font-medium transition-all duration-200 hover:opacity-90 disabled:opacity-40"
-                style={{
-                  background: "var(--main-color)",
-                  color: "var(--bg-color)",
-                }}
+                className="btn btn-primary w-full"
               >
                 Create
               </button>
             </div>
 
             {/* Join Room card */}
-            <div
-              className="flex flex-1 flex-col items-center rounded-xl p-6"
-              style={{ background: "var(--sub-alt-color)" }}
-            >
-              <h2
-                className="mb-1 text-sm font-semibold"
-                style={{ color: "var(--text-color)" }}
-              >
+            <div className="card flex flex-1 flex-col items-center p-6 transition-all hover:border-main/20">
+              <Link className="mb-3 h-6 w-6 text-main" />
+              <h2 className="mb-1 text-sm font-semibold text-text">
                 Join Room
               </h2>
-              <p
-                className="mb-5 text-center text-xs"
-                style={{ color: "var(--sub-color)" }}
-              >
+              <p className="mb-5 text-center text-xs text-sub">
                 Enter a room code to join a race
               </p>
               <div className="flex w-full gap-2">
@@ -592,22 +618,13 @@ const MultiplayerPage = () => {
                     setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))
                   }
                   placeholder="CODE"
-                  className="w-0 flex-1 rounded-lg px-3 py-2.5 text-center text-sm uppercase tracking-widest outline-none"
-                  style={{
-                    background: "var(--bg-color)",
-                    color: "var(--text-color)",
-                    border: "1px solid rgba(100,102,105,0.2)",
-                  }}
+                  className="input-field w-0 flex-1 text-center uppercase tracking-widest"
                 />
                 <button
                   type="button"
                   disabled={!connected || !username.trim() || joinCode.length < 4}
                   onClick={() => joinRoom(joinCode, username.trim())}
-                  className="rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-200 hover:opacity-90 disabled:opacity-40"
-                  style={{
-                    background: "var(--main-color)",
-                    color: "var(--bg-color)",
-                  }}
+                  className="btn btn-primary"
                 >
                   Join
                 </button>
@@ -615,52 +632,14 @@ const MultiplayerPage = () => {
             </div>
           </div>
         </div>
-      </main>
+      </Layout>
     );
   }
 
   /* ── In a room ── */
   return (
-    <main
-      className="flex min-h-screen flex-col"
-      style={{ background: "var(--bg-color)" }}
-    >
-      <header className="mx-auto flex w-full max-w-[850px] items-center justify-between px-8 pt-8 pb-2">
-        <button
-          type="button"
-          onClick={() => navigate("/")}
-          className="flex items-center gap-2 select-none"
-        >
-          <svg
-            className="h-7 w-7"
-            style={{ color: "var(--main-color)" }}
-            viewBox="0 0 24 24"
-            fill="currentColor"
-          >
-            <path d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-          </svg>
-          <span
-            className="text-2xl font-bold tracking-tight"
-            style={{ color: "var(--text-color)" }}
-          >
-            type<span style={{ color: "var(--main-color)" }}>nova</span>
-          </span>
-        </button>
-
-        <div className="flex items-center gap-3">
-          <span
-            className="rounded-md px-3 py-1 text-xs font-bold tracking-widest"
-            style={{
-              background: "var(--sub-alt-color)",
-              color: "var(--main-color)",
-            }}
-          >
-            {roomState.roomId}
-          </span>
-        </div>
-      </header>
-
-      <div className="mx-auto flex w-full max-w-[850px] flex-1 flex-col justify-center px-8">
+    <Layout>
+      <div className="flex flex-1 flex-col justify-center">
         {/* Waiting / Lobby */}
         {status === "waiting" && (
           <Lobby
@@ -682,23 +661,31 @@ const MultiplayerPage = () => {
         {/* Racing */}
         {status === "racing" && (
           <div className="animate-fade-in">
-            {/* Timer */}
-            <div className="mb-4">
-              <span
-                className="text-2xl font-semibold tabular-nums"
-                style={{ color: roomState.timeLeft <= 5 ? "var(--error-color)" : "var(--main-color)" }}
-              >
-                {roomState.timeLeft ?? ""}
-              </span>
+            {/* Timer + Live WPM bar */}
+            <div className="mb-5 flex items-center justify-between rounded-xl bg-sub-alt px-5 py-3">
+              <div className="flex items-center gap-3">
+                <span className="flex items-center gap-1 text-xs uppercase tracking-widest text-sub"><Timer className="h-3 w-3" /> Time</span>
+                <span
+                  className={`text-2xl font-bold tabular-nums sm:text-3xl ${
+                    roomState.timeLeft <= 5 ? "text-error timer-urgent" : "text-main"
+                  }`}
+                  role="timer"
+                  aria-label={`${roomState.timeLeft} seconds remaining`}
+                >
+                  {roomState.timeLeft ?? ""}
+                  <span className="text-sm font-normal text-sub">s</span>
+                </span>
+              </div>
             </div>
 
             {/* Player progress bars */}
-            <div className="mb-6">
+            <div className="mb-6 rounded-xl bg-sub-alt/50 px-4 py-4">
               {roomState.players.map((p) => (
                 <PlayerProgress
                   key={p.id}
                   player={p}
                   isSelf={p.id === socketId}
+                  showStats={false}
                 />
               ))}
             </div>
@@ -710,7 +697,7 @@ const MultiplayerPage = () => {
               onKeyDown={handleTyping}
               className="typing-area cursor-text rounded-lg py-4"
             >
-              <div className="overflow-visible pt-6 text-2xl leading-[1.75]">
+              <div className="overflow-visible pt-6 text-xl leading-[1.75] sm:text-2xl">
                 <TypingPrompt
                   text={raceText}
                   userInput={userInput}
@@ -736,7 +723,7 @@ const MultiplayerPage = () => {
           />
         )}
       </div>
-    </main>
+    </Layout>
   );
 };
 
