@@ -3,7 +3,8 @@ import Layout from "../components/Layout";
 import TypingGraph from "../components/TypingGraph";
 import TypingPrompt from "../components/TypingPrompt";
 import TypingStats from "../components/TypingStats";
-import { RotateCw, AlertTriangle } from "lucide-react";
+import { RotateCw, AlertTriangle, MousePointer2 } from "lucide-react";
+import { useAuth } from "../hooks/useAuth.jsx";
 
 const TEST_TEXTS = [
   "Typing fast is useful, but typing accurately is what actually makes you productive. Stay calm, keep a steady rhythm, and focus on every character.",
@@ -21,29 +22,32 @@ const countCorrectCharacters = (typedText, sourceText) => {
   }, 0);
 };
 
+const getInitialDuration = () => {
+  const saved = localStorage.getItem("typenova-duration");
+  const parsed = Number(saved);
+  return DURATION_OPTIONS.includes(parsed) ? parsed : 30;
+};
+
 const HomePage = () => {
+  const { user } = useAuth();
   // --- State ---
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [userInput, setUserInput] = useState("");
-  const [duration, setDuration] = useState(30);
-  const [timeLeft, setTimeLeft] = useState(30);
+  const [duration, setDuration] = useState(getInitialDuration);
+  const [timeLeft, setTimeLeft] = useState(getInitialDuration);
   const [isRunning, setIsRunning] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
   const [graphData, setGraphData] = useState([]);
   const [completedTyped, setCompletedTyped] = useState(0);
   const [completedCorrect, setCompletedCorrect] = useState(0);
-  const [totalKeystrokes, setTotalKeystrokes] = useState(0);
-  const [totalMistakes, setTotalMistakes] = useState(0);
   const [capsLock, setCapsLock] = useState(false);
   const [restartSpin, setRestartSpin] = useState(false);
+  const [isFocused, setIsFocused] = useState(true);
 
   // --- Refs for Real-time access in intervals ---
   const typingBoxRef = useRef(null);
   const totalTypedRef = useRef(0);
   const totalCorrectRef = useRef(0);
-  const totalKeystrokesRef = useRef(0);
-  const totalMistakesRef = useRef(0);
-  const userInputRef = useRef("");
 
   const currentText = TEST_TEXTS[currentTextIndex];
 
@@ -60,49 +64,47 @@ const HomePage = () => {
     [completedCorrect, currentCorrectCharacters]
   );
 
+  // MonkeyType-style WPM: (correct chars / 5) / minutes
   const wpm = useMemo(() => {
     const elapsedMinutes = (duration - timeLeft) / 60;
     if (elapsedMinutes <= 0) return 0;
-    // Standard WPM: (Correct Chars / 5) / Time
     return Math.round((totalCorrect / 5) / elapsedMinutes);
   }, [timeLeft, totalCorrect, duration]);
 
+  // MonkeyType-style Raw WPM: (all visible typed chars / 5) / minutes
   const rawWpm = useMemo(() => {
     const elapsedMinutes = (duration - timeLeft) / 60;
     if (elapsedMinutes <= 0) return 0;
-    return Math.round((totalKeystrokes / 5) / elapsedMinutes);
-  }, [timeLeft, totalKeystrokes, duration]);
+    return Math.round((totalTyped / 5) / elapsedMinutes);
+  }, [timeLeft, totalTyped, duration]);
 
+  // Accuracy: correct / total visible typed chars
   const accuracy = useMemo(() => {
-    if (totalKeystrokes === 0) return 100;
-    return Math.max(0, Math.round(((totalKeystrokes - totalMistakes) / totalKeystrokes) * 100));
-  }, [totalKeystrokes, totalMistakes]);
+    if (totalTyped === 0) return 100;
+    return Math.max(0, Math.round((totalCorrect / totalTyped) * 100));
+  }, [totalCorrect, totalTyped]);
 
   // Sync Refs
   useEffect(() => {
     totalTypedRef.current = totalTyped;
     totalCorrectRef.current = totalCorrect;
-    totalKeystrokesRef.current = totalKeystrokes;
-    totalMistakesRef.current = totalMistakes;
-    userInputRef.current = userInput;
-  }, [totalTyped, totalCorrect, totalKeystrokes, totalMistakes, userInput]);
+  }, [totalTyped, totalCorrect]);
 
   // --- Logic Functions ---
   const appendGraphPoint = useCallback((elapsedSeconds) => {
     if (elapsedSeconds <= 0) return;
 
+    const currentTotalTyped = totalTypedRef.current;
     const currentTotalCorrect = totalCorrectRef.current;
-    const currentKeystrokes = totalKeystrokesRef.current;
-    const currentMistakes = totalMistakesRef.current;
-    
+
     const currentWpm = Math.round((currentTotalCorrect / 5) * (60 / elapsedSeconds));
-    const currentRaw = Math.round((currentKeystrokes / 5) * (60 / elapsedSeconds));
-    
+    const currentRaw = Math.round((currentTotalTyped / 5) * (60 / elapsedSeconds));
+
     setGraphData((prev) => {
       const lastPoint = prev[prev.length - 1];
       if (lastPoint?.second === elapsedSeconds) return prev;
 
-      const totalErrorsSoFar = currentKeystrokes - currentTotalCorrect; 
+      const totalErrorsSoFar = currentTotalTyped - currentTotalCorrect;
       const prevTotalErrors = lastPoint ? lastPoint.totalErrors : 0;
       const errorsThisSecond = Math.max(0, totalErrorsSoFar - prevTotalErrors);
 
@@ -140,34 +142,60 @@ const HomePage = () => {
     return () => clearInterval(interval);
   }, [isRunning, isFinished, duration, appendGraphPoint]);
 
+  // Save test result to backend when test finishes
+  const hasSavedRef = useRef(false);
+  useEffect(() => {
+    if (!isFinished) {
+      hasSavedRef.current = false;
+      return;
+    }
+    if (hasSavedRef.current || !user) return;
+    hasSavedRef.current = true;
+    const saveResult = async () => {
+      try {
+        const API_BASE = import.meta.env.VITE_API_URL || "";
+        await fetch(`${API_BASE}/api/stats/save`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            wpm,
+            rawWpm,
+            accuracy,
+            correct: totalCorrect,
+            incorrect: totalTyped - totalCorrect,
+            duration,
+          }),
+        });
+      } catch {
+        // silently fail — guest or network error
+      }
+    };
+    saveResult();
+  }, [isFinished, user, wpm, rawWpm, accuracy, totalCorrect, totalTyped, duration]);
+
   const handleTyping = (event) => {
     if (isFinished || event.key === "Tab") return;
 
-    // Prevent default scrolling for space/backspace
-    if (event.key === " " || event.key === "Backspace") {
-        // Only prevent if we're actually typing
-    }
-    
+    // Allow browser shortcuts (F5 refresh, Ctrl+R, etc.)
+    if (event.key.startsWith("F") && event.key.length >= 2) return;
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+
     event.preventDefault();
 
+
     if (event.key === "Backspace") {
-      setUserInput((prev) => prev.slice(0, -1));
+      setUserInput((prev) => typeof prev === 'string' ? prev.slice(0, -1) : '');
       return;
     }
 
     // Ignore non-character keys
-    if (event.key.length !== 1 || event.ctrlKey || event.metaKey || event.altKey) return;
+    if (event.key.length !== 1) return;
 
     if (!isRunning) setIsRunning(true);
 
-    const cursorPos = userInput.length;
-    setTotalKeystrokes((prev) => prev + 1);
-
-    if (event.key !== currentText[cursorPos]) {
-      setTotalMistakes((prev) => prev + 1);
-    }
-
-    const nextInput = (userInput + event.key).slice(0, currentText.length);
+    const safeUserInput = typeof userInput === 'string' ? userInput : '';
+    const nextInput = (safeUserInput + event.key).slice(0, currentText.length);
 
     if (nextInput.length === currentText.length) {
       setCompletedTyped((prev) => prev + currentText.length);
@@ -179,18 +207,21 @@ const HomePage = () => {
     }
   };
 
-  const handleRestart = useCallback(() => {
+  const handleRestart = useCallback((overrideDuration) => {
+    // Defensive: ignore event objects
+    let dur = duration;
+    if (typeof overrideDuration === 'number') {
+      dur = overrideDuration;
+    }
     const randomIndex = Math.floor(Math.random() * TEST_TEXTS.length);
     setCurrentTextIndex(randomIndex);
     setUserInput("");
-    setTimeLeft(duration);
+    setTimeLeft(dur);
     setIsRunning(false);
     setIsFinished(false);
     setGraphData([]);
     setCompletedTyped(0);
     setCompletedCorrect(0);
-    setTotalKeystrokes(0);
-    setTotalMistakes(0);
     setRestartSpin(true);
     setTimeout(() => setRestartSpin(false), 400);
     setTimeout(() => typingBoxRef.current?.focus(), 0);
@@ -198,8 +229,8 @@ const HomePage = () => {
 
   const handleDurationChange = (newDuration) => {
     setDuration(newDuration);
-    setTimeLeft(newDuration);
-    handleRestart();
+    localStorage.setItem("typenova-duration", newDuration);
+    handleRestart(newDuration);
   };
 
   const handleKeyEvent = (event) => {
@@ -222,6 +253,31 @@ const HomePage = () => {
     window.addEventListener("keydown", handleGlobalKey);
     return () => window.removeEventListener("keydown", handleGlobalKey);
   }, [handleRestart]);
+
+  // Track focus state on the typing area
+  useEffect(() => {
+    if (isFinished) return;
+    const box = typingBoxRef.current;
+    if (!box) return;
+    const onFocus = () => setIsFocused(true);
+    const onBlur = () => setIsFocused(false);
+    box.addEventListener("focus", onFocus);
+    box.addEventListener("blur", onBlur);
+    return () => {
+      box.removeEventListener("focus", onFocus);
+      box.removeEventListener("blur", onBlur);
+    };
+  }, [isFinished]);
+
+  // Refocus on any keypress when unfocused
+  useEffect(() => {
+    if (isFinished || isFocused) return;
+    const refocusOnKey = () => {
+      typingBoxRef.current?.focus();
+    };
+    window.addEventListener("keydown", refocusOnKey);
+    return () => window.removeEventListener("keydown", refocusOnKey);
+  }, [isFinished, isFocused]);
 
   const restartButton = (
     <button
@@ -271,7 +327,7 @@ const HomePage = () => {
             time={duration}
             raw={rawWpm}
             correct={totalCorrect}
-            incorrect={totalKeystrokes - totalCorrect}
+            incorrect={totalTyped - totalCorrect}
             extra={0}
             missed={0}
           />
@@ -289,9 +345,38 @@ const HomePage = () => {
           }}
           className="typing-area relative cursor-text rounded-lg py-4 outline-none"
         >
-          <div className="overflow-hidden text-xl leading-[1.75] sm:text-2xl">
+          {/* {(() => {
+            // console.log('TypingPrompt props:', {
+            //   currentText,
+            //   userInput,
+            //   currentTextType: typeof currentText,
+            //   userInputType: typeof userInput,
+            // });
+            return null;
+          })()} */}
+          {(() => {
+            if (typeof userInput !== 'string' || typeof currentText !== 'string') {
+              console.error('userInput or currentText is not a string:', { userInput, currentText });
+              return <div style={{color:'red'}}>Error: Invalid input state. Please reload the page.</div>;
+            }
+            return null;
+          })()}
+          <div className="overflow-hidden text-xl leading-[1.75] sm:text-2xl" style={{ maxHeight: '7.5em' }}>
             <TypingPrompt text={currentText} userInput={userInput} />
           </div>
+
+          {/* Focus lost overlay */}
+          {!isFocused && (
+            <div
+              className="focus-overlay"
+              onClick={() => typingBoxRef.current?.focus()}
+            >
+              <div className="focus-overlay-content">
+                <MousePointer2 className="h-5 w-5" />
+                <span>Click here or press any key to focus</span>
+              </div>
+            </div>
+          )}
 
           {capsLock && isRunning && (
             <div className="caps-warning mt-3 flex items-center gap-2 text-xs text-error">

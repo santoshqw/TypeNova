@@ -27,6 +27,10 @@
   --surface-color: #393b3e;
 }
 
+html {
+  font-size: 125%;
+}
+
 body {
   font-family: 'Lexend Deca', system-ui, -apple-system, sans-serif;
   background: var(--bg-color);
@@ -120,6 +124,8 @@ body {
 .typing-slide-wrapper {
   position: relative;
   overflow: visible;
+  transition: transform 150ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  will-change: transform;
 }
 
 .typing-slide-up {
@@ -144,6 +150,40 @@ body {
 
 .typing-area:focus-visible {
   outline: none;
+}
+
+/* Focus lost overlay */
+.focus-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  border-radius: 8px;
+  cursor: pointer;
+  z-index: 20;
+  animation: focusOverlayIn 0.2s ease-out;
+}
+
+.focus-overlay-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--sub-color);
+  font-size: 0.9rem;
+  font-family: 'Lexend Deca', system-ui, sans-serif;
+  padding: 10px 20px;
+  border-radius: 6px;
+  background: var(--sub-alt-color, rgba(255, 255, 255, 0.06));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  user-select: none;
+}
+
+@keyframes focusOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* Smooth page transitions */

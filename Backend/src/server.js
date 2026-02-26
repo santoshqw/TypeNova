@@ -4,10 +4,12 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import { connectDB } from "./config/db.js"
 import { initSocket } from "./socket/socket.js"
 
 import userRoutes from "./routes/user.route.js"
+import statRoutes from "./routes/stat.route.js"
 
 // __dirname equivalent for ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -25,16 +27,18 @@ const allowedOrigins = process.env.NODE_ENV === "production"
   ? [process.env.CLIENT_URL].filter(Boolean)
   : ["http://localhost:5173"];
 
-app.use(cors({ origin: allowedOrigins }));
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json());
+app.use(cookieParser());
 
 app.use('/api/user', userRoutes);
+app.use('/api/stats', statRoutes);
 
 // Serve frontend — always if the dist folder exists
 const distPath = path.join(rootDir, "Frontend", "dist");
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
-  app.get("/{*splat}", (req, res) => {
+  app.get("*", (req, res) => {
     res.sendFile(path.join(distPath, "index.html"));
   });
 }
@@ -58,11 +62,9 @@ process.on("SIGINT", shutdown);
 
 server.on("error", (err) => {
   if (err.code === "EADDRINUSE") {
-    console.error(`Port ${PORT} is already in use. Retrying in 2s...`);
-    setTimeout(() => {
-      server.close();
-      server.listen(PORT);
-    }, 2000);
+    console.error(`Port ${PORT} is already in use.`);
+    console.error("Please close the process using this port or change the PORT in .env");
+    process.exit(1);
   } else {
     throw err;
   }

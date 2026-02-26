@@ -44,8 +44,9 @@ const Navbar = ({ rightContent, onLogoClick }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleLogoClick = () => {
+  const handleLogoClick = (e) => {
     if (location.pathname === "/" && onLogoClick) {
+      // Always call with no arguments to avoid passing event
       onLogoClick();
     } else {
       navigate("/");
@@ -53,7 +54,7 @@ const Navbar = ({ rightContent, onLogoClick }) => {
   };
 
   return (
-    <header className="mx-auto flex w-full max-w-225 items-center justify-between px-6 pt-6 pb-2 sm:px-8 sm:pt-8">
+    <header className="mx-auto flex w-full items-center justify-between px-8 pt-6 pb-2 sm:px-16 sm:pt-8 lg:px-24 xl:px-32">
       <Logo onClick={handleLogoClick} />
 
       <nav className="flex items-center gap-1">

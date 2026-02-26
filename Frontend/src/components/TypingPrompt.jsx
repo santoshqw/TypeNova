@@ -15,6 +15,7 @@ const TypingPrompt = ({ text, userInput, opponents = [] }) => {
   const blinkTimeoutRef = useRef(null);
   const slideRef = useRef(null);
   const prevTextRef = useRef(text);
+  const scrollOffsetRef = useRef(0);
 
   const cursorIndex = Math.min(userInput.length, text.length);
   const typedText = text.slice(0, userInput.length);
@@ -24,12 +25,14 @@ const TypingPrompt = ({ text, userInput, opponents = [] }) => {
     charRefs.current = [];
   }
 
-  // Trigger slide-up animation when text passage changes
+  // Trigger slide-up animation when text passage changes & reset scroll offset
   useLayoutEffect(() => {
     if (prevTextRef.current !== text) {
       prevTextRef.current = text;
+      scrollOffsetRef.current = 0;
       const el = slideRef.current;
       if (el) {
+        el.style.transform = 'translateY(0px)';
         el.classList.remove("typing-slide-up");
         void el.offsetWidth; // Force reflow
         el.classList.add("typing-slide-up");
@@ -37,18 +40,28 @@ const TypingPrompt = ({ text, userInput, opponents = [] }) => {
     }
   }, [text]);
 
-  // Direct DOM caret positioning
+  // Direct DOM caret positioning + auto-scroll to keep focus on current line
   useLayoutEffect(() => {
     const caretElement = caretRef.current;
     const targetElement =
       cursorIndex === text.length ? endRef.current : charRefs.current[cursorIndex];
+    const wrapper = slideRef.current;
 
     if (!targetElement || !caretElement) return;
 
-    // Use offsetLeft/Top relative to the containerRef
     const x = targetElement.offsetLeft;
     const y = targetElement.offsetTop;
     const h = targetElement.offsetHeight || 32;
+    const lineHeight = h;
+
+    // Scroll: keep the caret on the first visible line (scroll once it passes line 1)
+    const targetScrollOffset = Math.max(0, y - lineHeight);
+    if (targetScrollOffset !== scrollOffsetRef.current) {
+      scrollOffsetRef.current = targetScrollOffset;
+      if (wrapper) {
+        wrapper.style.transform = `translateY(-${targetScrollOffset}px)`;
+      }
+    }
 
     caretElement.style.transform = `translate(${x}px, ${y}px)`;
     caretElement.style.height = `${h}px`;
