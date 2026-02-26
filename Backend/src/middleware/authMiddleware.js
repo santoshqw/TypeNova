@@ -15,8 +15,8 @@ export const isLoggedIn = (req, res, next) => {
 
     
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // attach user info to request
-    req.user = decoded;
+    // attach user info to request — token payload is { userId }
+    req.user = { id: decoded.userId };
     next(); 
 
   } catch (error) {

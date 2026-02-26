@@ -69,7 +69,7 @@ const TypingGraph = ({ data, showAfterComplete, wpm = 0, accuracy = 0 }) => {
           </div>
         </div>
         {/* Chart */}
-        <div className="h-96 flex-1 [&_*:focus]:outline-none [&_*:focus-visible]:outline-none">
+        <div className="flex-1 [&_*:focus]:outline-none [&_*:focus-visible]:outline-none" style={{ minHeight: 300 }}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 8, right: 4, left: -12, bottom: 0 }}>
             <defs>

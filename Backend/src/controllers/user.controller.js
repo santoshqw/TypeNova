@@ -35,13 +35,11 @@ export const signupUser = async (req, res) => {
 
     await newUser.save();
 
-    if (newUser) {
-      generateTokenAndSetCookie(newUser._id, res);
-      await newUser.save(); //save the new user to the database (with above details)
-    }
+    generateTokenAndSetCookie(newUser._id, res);
 
     // Return user data (without password)
-    res.status(201).json({
+    return res.status(201).json({
+      success: true,
       message: "User created successfully",
       user: {
         id: newUser._id,
@@ -51,6 +49,7 @@ export const signupUser = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("Signup error:", error.message);
     res.status(500).json({ error: error.message });
   }
 };
@@ -85,7 +84,8 @@ export const loginUser = async (req, res) => {
     }
 
     // Return user data (without password)
-    res.status(200).json({
+    return res.status(200).json({
+      success: true,
       message: "User logged in successfully",
       user: {
         id: user._id,
@@ -95,6 +95,7 @@ export const loginUser = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("Login error:", error.message);
     res.status(500).json({ error: error.message });
   }
 };

@@ -6,11 +6,11 @@ const Layout = ({ children, rightContent, onLogoClick }) => {
     <main className="flex min-h-screen flex-col bg-bg">
       <Navbar rightContent={rightContent} onLogoClick={onLogoClick} />
 
-      <div className="mx-auto flex w-full max-w-225 flex-1 flex-col justify-center px-6 sm:px-8">
+      <div className="mx-auto flex w-full flex-1 flex-col justify-center px-8 sm:px-16 lg:px-24 xl:px-32">
         {children}
       </div>
 
-      <footer className="mx-auto w-full max-w-225 px-6 py-4 sm:px-8">
+      <footer className="mx-auto w-full px-8 py-4 sm:px-16 lg:px-24 xl:px-32">
         <div className="flex items-center justify-between text-xs text-sub">
           <span>
             <kbd className="rounded bg-sub-alt px-1.5 py-0.5 text-[10px] text-sub">
