@@ -19,6 +19,11 @@ const TypingPrompt = ({ text, userInput, opponents = [] }) => {
   const cursorIndex = Math.min(userInput.length, text.length);
   const typedText = text.slice(0, userInput.length);
 
+  // 1. Fix: Reset charRefs when text changes to prevent stale element references
+  if (prevTextRef.current !== text) {
+    charRefs.current = [];
+  }
+
   // Trigger slide-up animation when text passage changes
   useLayoutEffect(() => {
     if (prevTextRef.current !== text) {
@@ -26,33 +31,30 @@ const TypingPrompt = ({ text, userInput, opponents = [] }) => {
       const el = slideRef.current;
       if (el) {
         el.classList.remove("typing-slide-up");
-        // Force reflow to restart animation
-        void el.offsetWidth;
+        void el.offsetWidth; // Force reflow
         el.classList.add("typing-slide-up");
       }
     }
   }, [text]);
 
-  // Direct DOM caret positioning — no setState, no extra re-render
+  // Direct DOM caret positioning
   useLayoutEffect(() => {
-    const containerElement = containerRef.current;
     const caretElement = caretRef.current;
     const targetElement =
       cursorIndex === text.length ? endRef.current : charRefs.current[cursorIndex];
 
-    if (!containerElement || !targetElement || !caretElement) {
-      return;
-    }
+    if (!targetElement || !caretElement) return;
 
+    // Use offsetLeft/Top relative to the containerRef
     const x = targetElement.offsetLeft;
     const y = targetElement.offsetTop;
-    const h = targetElement.offsetHeight || 40;
+    const h = targetElement.offsetHeight || 32;
 
     caretElement.style.transform = `translate(${x}px, ${y}px)`;
     caretElement.style.height = `${h}px`;
   }, [cursorIndex, text]);
 
-  // Pause blink while typing — restart after 500ms idle
+  // Pause blink while typing
   useEffect(() => {
     const caret = caretRef.current;
     if (!caret) return;
@@ -68,31 +70,33 @@ const TypingPrompt = ({ text, userInput, opponents = [] }) => {
   }, [userInput]);
 
   const setCharRef = useCallback((element, index) => {
-    charRefs.current[index] = element;
+    if (element) {
+      charRefs.current[index] = element;
+    }
   }, []);
 
   return (
-    <div ref={containerRef} className="typing-prompt relative select-none">
-      <div ref={slideRef} className="typing-slide-wrapper">
-        {/* Ghost text — untyped characters in sub color */}
-        <p style={{ color: 'var(--sub-color)' }}>
+    <div ref={containerRef} className="typing-prompt relative select-none break-all sm:break-normal">
+      <div ref={slideRef} className="typing-slide-wrapper relative">
+        
+        {/* Ghost text — The base layer */}
+        <div className="typing-text-base whitespace-pre-wrap" style={{ color: 'var(--sub-color)' }}>
           {text.split("").map((character, index) => (
             <span
-              key={index}
+              key={`${text.slice(0, 5)}-${index}`} // Unique key per passage
               ref={(el) => setCharRef(el, index)}
               className="typing-char"
             >
               {character}
             </span>
           ))}
-          <span ref={endRef} className="typing-char" />
-        </p>
+          <span ref={endRef} className="typing-char inline-block w-1" />
+        </div>
 
-        {/* Typed overlay */}
-        <p className="typing-overlay absolute inset-0" aria-hidden="true">
+        {/* Typed overlay — Matches the base layer perfectly */}
+        <div className="typing-overlay absolute inset-0 whitespace-pre-wrap pointer-events-none" aria-hidden="true">
           {typedText.split("").map((character, index) => {
             const isWrong = userInput[index] !== text[index];
-
             return (
               <span
                 key={index}
@@ -103,10 +107,10 @@ const TypingPrompt = ({ text, userInput, opponents = [] }) => {
               </span>
             );
           })}
-        </p>
+        </div>
 
-        {/* Caret — positioned via ref, no state re-render */}
-        <span ref={caretRef} className="typing-caret" />
+        {/* Main Caret */}
+        <span ref={caretRef} className="typing-caret absolute top-0 left-0 transition-transform duration-75 ease-out" />
 
         {/* Opponent cursors */}
         {opponents.map((opp, i) => (
@@ -125,7 +129,6 @@ const TypingPrompt = ({ text, userInput, opponents = [] }) => {
   );
 };
 
-/* ── Opponent caret rendered via direct DOM positioning ── */
 const OpponentCaret = ({ charRefs, endRef, textLength, cursorIndex, username, color }) => {
   const caretEl = useRef(null);
 
@@ -134,21 +137,24 @@ const OpponentCaret = ({ charRefs, endRef, textLength, cursorIndex, username, co
     const target =
       cursorIndex >= textLength
         ? endRef.current
-        : charRefs.current?.[cursorIndex];
+        : charRefs.current[cursorIndex];
 
     if (!el || !target) return;
 
     el.style.transform = `translate(${target.offsetLeft}px, ${target.offsetTop}px)`;
-    el.style.height = `${target.offsetHeight || 40}px`;
-  }, [cursorIndex, textLength, charRefs, endRef]);
+    el.style.height = `${target.offsetHeight || 32}px`;
+  }, [cursorIndex, textLength]);
 
   return (
     <span
       ref={caretEl}
-      className="opponent-caret"
-      style={{ background: color }}
+      className="opponent-caret absolute top-0 left-0 pointer-events-none z-10 transition-all duration-200"
+      style={{ borderLeft: `2px solid ${color}`, width: '2px' }}
     >
-      <span className="opponent-label" style={{ background: color }}>
+      <span 
+        className="opponent-label absolute bottom-full left-0 mb-1 px-1 text-[10px] whitespace-nowrap rounded text-white" 
+        style={{ background: color }}
+      >
         {username}
       </span>
     </span>
