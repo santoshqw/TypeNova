@@ -23,7 +23,15 @@ export default function Leaderboard({ initialMode = 60 }) {
         setLoading(false);
       })
       .catch((err) => {
-        setError("Failed to load leaderboard");
+        let msg = "Failed to load leaderboard";
+        if (err.response) {
+          msg += `: ${err.response.status} ${err.response.data?.message || err.response.statusText}`;
+        } else if (err.request) {
+          msg += ": No response from server.";
+        } else {
+          msg += `: ${err.message}`;
+        }
+        setError(msg);
         setLoading(false);
       });
   }, [timeMode]);
