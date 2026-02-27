@@ -218,7 +218,7 @@ const HomePage = () => {
     setUserInput("");
     setTimeLeft(dur);
     setIsRunning(false);
-    setIsFinished(false);
+    setIsFinished(false); // Ensure typing area reappears
     setGraphData([]);
     setCompletedTyped(0);
     setCompletedCorrect(0);
