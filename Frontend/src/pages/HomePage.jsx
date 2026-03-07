@@ -302,7 +302,10 @@ const HomePage = () => {
             {DURATION_OPTIONS.map((opt) => (
               <button
                 key={opt}
-                onClick={() => handleDurationChange(opt)}
+                onClick={() => {
+                  handleDurationChange(opt);
+                  setTimeout(() => typingBoxRef.current?.focus(), 0);
+                }}
                 className={`duration-btn ${duration === opt ? "active" : ""}`}
               >
                 {opt}

@@ -1,6 +1,8 @@
+
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../hooks/useAuth";
+import "./LeaderboardGrid.css";
 
 const TIME_MODES = [15, 30, 60, 120];
 
@@ -32,6 +34,7 @@ export default function Leaderboard({ initialMode = 60 }) {
           msg += `: ${err.message}`;
         }
         setError(msg);
+        console.log(err);
         setLoading(false);
       });
   }, [timeMode]);
