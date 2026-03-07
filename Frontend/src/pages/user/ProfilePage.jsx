@@ -15,7 +15,6 @@ import Leaderboard from "../../components/Leaderboard";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
-/* ── Stat card ── */
 const StatCard = ({ icon: Icon, label, value, color = "text-main" }) => (
   <div className="flex flex-col items-center gap-2 rounded-lg bg-sub-alt px-5 py-4">
     {Icon && <Icon className={`h-5 w-5 ${color}`} />}
@@ -24,7 +23,6 @@ const StatCard = ({ icon: Icon, label, value, color = "text-main" }) => (
   </div>
 );
 
-/* ── Auth form ── */
 const AuthForm = () => {
   const { login, signup } = useAuth();
   const [mode, setMode] = useState("login");
@@ -128,7 +126,6 @@ const AuthForm = () => {
   );
 };
 
-/* ── Profile page ── */
 const ProfilePage = () => {
   const { user, loading: authLoading, logout } = useAuth();
   const [stats, setStats] = useState(null);
@@ -163,7 +160,6 @@ const ProfilePage = () => {
     );
   }
 
-  /* Guest view */
   if (!user) {
     return (
       <Layout>
@@ -179,7 +175,6 @@ const ProfilePage = () => {
     );
   }
 
-  /* Logged-in view */
   const s = stats || {};
 
   return (

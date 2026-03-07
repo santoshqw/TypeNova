@@ -183,7 +183,6 @@ const HomePage = () => {
 
     event.preventDefault();
 
-
     if (event.key === "Backspace") {
       setUserInput((prev) => typeof prev === 'string' ? prev.slice(0, -1) : '');
       return;
@@ -192,7 +191,10 @@ const HomePage = () => {
     // Ignore non-character keys
     if (event.key.length !== 1) return;
 
-    if (!isRunning) setIsRunning(true);
+    // Only start typing on first valid key press
+    if (!isRunning) {
+      setIsRunning(true);
+    }
 
     const safeUserInput = typeof userInput === 'string' ? userInput : '';
     const nextInput = (safeUserInput + event.key).slice(0, currentText.length);
@@ -343,6 +345,7 @@ const HomePage = () => {
             handleKeyEvent(e);
             handleTyping(e);
           }}
+          onClick={() => typingBoxRef.current?.focus()}
           className="typing-area relative cursor-text rounded-lg py-4 outline-none"
         >
           {/* {(() => {
