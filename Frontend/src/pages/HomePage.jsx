@@ -1,3 +1,4 @@
+
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import Layout from "../components/Layout";
 import TypingGraph from "../components/TypingGraph";
@@ -5,6 +6,10 @@ import TypingPrompt from "../components/TypingPrompt";
 import TypingStats from "../components/TypingStats";
 import { RotateCw, AlertTriangle, MousePointer2 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth.jsx";
+
+// ...existing code...
+
+
 
 const TEST_TEXTS = [
   "Typing fast is useful, but typing accurately is what actually makes you productive. Stay calm, keep a steady rhythm, and focus on every character.",
@@ -15,12 +20,10 @@ const TEST_TEXTS = [
 
 const DURATION_OPTIONS = [15, 30, 60, 120];
 
-// Helper to count correct characters between typed and source
-const countCorrectCharacters = (typedText, sourceText) => {
-  return typedText.split("").reduce((total, character, index) => {
-    return character === sourceText[index] ? total + 1 : total;
-  }, 0);
-};
+
+// Count correct characters between typed and source
+const countCorrectCharacters = (typedText, sourceText) =>
+  [...typedText].reduce((total, char, i) => char === sourceText[i] ? total + 1 : total, 0);
 
 const getInitialDuration = () => {
   const saved = localStorage.getItem("typenova-duration");
@@ -84,7 +87,8 @@ const HomePage = () => {
     return Math.max(0, Math.round((totalCorrect / totalTyped) * 100));
   }, [totalCorrect, totalTyped]);
 
-  // Sync Refs
+
+  // Sync Refs for graph
   useEffect(() => {
     totalTypedRef.current = totalTyped;
     totalCorrectRef.current = totalCorrect;
@@ -174,31 +178,20 @@ const HomePage = () => {
     saveResult();
   }, [isFinished, user, wpm, rawWpm, accuracy, totalCorrect, totalTyped, duration]);
 
+
+  // Handle typing logic
   const handleTyping = (event) => {
     if (isFinished || event.key === "Tab") return;
-
-    // Allow browser shortcuts (F5 refresh, Ctrl+R, etc.)
     if (event.key.startsWith("F") && event.key.length >= 2) return;
     if (event.ctrlKey || event.metaKey || event.altKey) return;
-
     event.preventDefault();
-
     if (event.key === "Backspace") {
-      setUserInput((prev) => typeof prev === 'string' ? prev.slice(0, -1) : '');
+      setUserInput((prev) => prev.slice(0, -1));
       return;
     }
-
-    // Ignore non-character keys
     if (event.key.length !== 1) return;
-
-    // Only start typing on first valid key press
-    if (!isRunning) {
-      setIsRunning(true);
-    }
-
-    const safeUserInput = typeof userInput === 'string' ? userInput : '';
-    const nextInput = (safeUserInput + event.key).slice(0, currentText.length);
-
+    if (!isRunning) setIsRunning(true);
+    const nextInput = (userInput + event.key).slice(0, currentText.length);
     if (nextInput.length === currentText.length) {
       setCompletedTyped((prev) => prev + currentText.length);
       setCompletedCorrect((prev) => prev + countCorrectCharacters(nextInput, currentText));
@@ -209,24 +202,24 @@ const HomePage = () => {
     }
   };
 
+
+  // Restart test
   const handleRestart = useCallback((overrideDuration) => {
-    // Defensive: ignore event objects
-    let dur = duration;
-    if (typeof overrideDuration === 'number') {
-      dur = overrideDuration;
-    }
-    const randomIndex = Math.floor(Math.random() * TEST_TEXTS.length);
-    setCurrentTextIndex(randomIndex);
+    const dur = typeof overrideDuration === 'number' ? overrideDuration : duration;
+    setCurrentTextIndex(Math.floor(Math.random() * TEST_TEXTS.length));
     setUserInput("");
     setTimeLeft(dur);
     setIsRunning(false);
-    setIsFinished(false); // Ensure typing area reappears
+    setIsFinished(false);
     setGraphData([]);
     setCompletedTyped(0);
     setCompletedCorrect(0);
     setRestartSpin(true);
     setTimeout(() => setRestartSpin(false), 400);
-    setTimeout(() => typingBoxRef.current?.focus(), 0);
+    setTimeout(() => {
+      typingBoxRef.current?.focus();
+      setIsFocused(true);
+    }, 0);
   }, [duration]);
 
   const handleDurationChange = (newDuration) => {
@@ -235,9 +228,9 @@ const HomePage = () => {
     handleRestart(newDuration);
   };
 
-  const handleKeyEvent = (event) => {
-    setCapsLock(event.getModifierState?.("CapsLock") ?? false);
-  };
+
+  // Caps lock state
+  const handleKeyEvent = (event) => setCapsLock(event.getModifierState?.("CapsLock") ?? false);
 
   // Global Keyboard Listeners
   useEffect(() => {
@@ -271,12 +264,11 @@ const HomePage = () => {
     };
   }, [isFinished]);
 
+
   // Refocus on any keypress when unfocused
   useEffect(() => {
     if (isFinished || isFocused) return;
-    const refocusOnKey = () => {
-      typingBoxRef.current?.focus();
-    };
+    const refocusOnKey = () => typingBoxRef.current?.focus();
     window.addEventListener("keydown", refocusOnKey);
     return () => window.removeEventListener("keydown", refocusOnKey);
   }, [isFinished, isFocused]);
@@ -302,10 +294,7 @@ const HomePage = () => {
             {DURATION_OPTIONS.map((opt) => (
               <button
                 key={opt}
-                onClick={() => {
-                  handleDurationChange(opt);
-                  setTimeout(() => typingBoxRef.current?.focus(), 0);
-                }}
+                onClick={() => handleDurationChange(opt)}
                 className={`duration-btn ${duration === opt ? "active" : ""}`}
               >
                 {opt}
@@ -344,6 +333,7 @@ const HomePage = () => {
         <div
           ref={typingBoxRef}
           tabIndex={0}
+          autoFocus
           onKeyDown={(e) => {
             handleKeyEvent(e);
             handleTyping(e);
@@ -351,15 +341,6 @@ const HomePage = () => {
           onClick={() => typingBoxRef.current?.focus()}
           className="typing-area relative cursor-text rounded-lg py-4 outline-none"
         >
-          {/* {(() => {
-            // console.log('TypingPrompt props:', {
-            //   currentText,
-            //   userInput,
-            //   currentTextType: typeof currentText,
-            //   userInputType: typeof userInput,
-            // });
-            return null;
-          })()} */}
           {(() => {
             if (typeof userInput !== 'string' || typeof currentText !== 'string') {
               console.error('userInput or currentText is not a string:', { userInput, currentText });
@@ -372,7 +353,7 @@ const HomePage = () => {
           </div>
 
           {/* Focus lost overlay */}
-          {!isFocused && (
+          {isRunning && !isFocused && (
             <div
               className="focus-overlay"
               onClick={() => typingBoxRef.current?.focus()}
