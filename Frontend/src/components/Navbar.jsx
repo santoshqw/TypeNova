@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Zap, Users, User } from "lucide-react";
+import { Zap, Users, User, Trophy } from "lucide-react";
 
 const Logo = ({ onClick }) => (
   <button
@@ -64,6 +64,12 @@ const Navbar = ({ rightContent, onLogoClick }) => {
           icon={<Users className="h-4 w-4" />}
           label="multi"
           active={location.pathname === "/multiplayer"}
+        />
+        <NavLink
+          to="/leaderboard"
+          icon={<Trophy className="h-4 w-4" />}
+          label="leaderboard"
+          active={location.pathname === "/leaderboard"}
         />
         <NavLink
           to="/profile"
