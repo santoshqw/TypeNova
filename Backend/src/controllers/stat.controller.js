@@ -1,10 +1,6 @@
 import UserStat from "../models/stat.model.js";
 import Leaderboard from "../models/leaderboard.model.js";
 
-/**
- * GET /api/stats
- * Returns the logged-in user's typing stats (creates a fresh doc if none exists).
- */
 export const getStats = async (req, res) => {
   try {
     let stats = await UserStat.findOne({ user: req.user.id });
@@ -20,11 +16,6 @@ export const getStats = async (req, res) => {
   }
 };
 
-/**
- * POST /api/stats/save
- * Saves a single test result and updates running averages.
- * Body: { wpm, rawWpm, accuracy, correct, incorrect, duration }
- */
 export const saveTestResult = async (req, res) => {
   try {
     const { wpm, rawWpm, accuracy, correct, incorrect, duration } = req.body;
@@ -78,7 +69,7 @@ export const saveTestResult = async (req, res) => {
   }
 };
 
-// Save or update leaderboard entry for a user in a specific time mode
+
 export const updateLeaderboard = async (userId, wpm, timeMode) => {
   if (![15, 30, 60, 120].includes(timeMode)) return;
   const existing = await Leaderboard.findOne({ user: userId, timeMode });
@@ -91,7 +82,7 @@ export const updateLeaderboard = async (userId, wpm, timeMode) => {
   }
 };
 
-// Get global leaderboard for a time mode
+
 export const getGlobalLeaderboard = async (req, res) => {
   try {
     const { timeMode = 60, limit = 100 } = req.query;
@@ -107,21 +98,21 @@ export const getGlobalLeaderboard = async (req, res) => {
         .limit(Number(limit));
     } catch (queryError) {
       console.error("Leaderboard query error:", queryError);
-      // Return empty leaderboard on query error
-      return res.status(200).json({ success: true, leaderboard: [] });
+      return res.status(500).json({ success: false, message: "Leaderboard DB query error", error: queryError?.message || queryError });
     }
     if (!leaders || leaders.length === 0) {
       console.log("No leaderboard entries for mode", mode);
       return res.status(200).json({ success: true, leaderboard: [] });
     }
+    // Filter out entries with missing user data
+    const filteredLeaders = leaders.filter(entry => entry.user && typeof entry.user === 'object' && entry.user.username);
+    if (filteredLeaders.length === 0) {
+      return res.status(200).json({ success: true, leaderboard: [] });
+    }
     // Assign ranks, handle ties
     let lastWPM = null, lastRank = 0, rank = 0;
-    const ranked = leaders.map((entry, i) => {
-      // Defensive: fallback if user is not populated
+    const ranked = filteredLeaders.map((entry, i) => {
       let user = entry.user;
-      if (!user || !user.username) {
-        user = { username: "Unknown", profileImg: "" };
-      }
       rank = (entry.bestWPM === lastWPM) ? lastRank : i + 1;
       lastWPM = entry.bestWPM;
       lastRank = rank;
@@ -135,6 +126,6 @@ export const getGlobalLeaderboard = async (req, res) => {
     return res.status(200).json({ success: true, leaderboard: ranked });
   } catch (error) {
     console.error("getGlobalLeaderboard error:", error);
-    return res.status(200).json({ success: true, leaderboard: [] });
+    return res.status(500).json({ success: false, message: "getGlobalLeaderboard error", error: error?.message || error });
   }
 };
