@@ -202,9 +202,7 @@ const ProfilePage = () => {
           </div>
         )}
 
-        <div className="mt-12 w-full max-w-2xl mx-auto">
-          <Leaderboard />
-        </div>
+
 
         <button
           onClick={logout}

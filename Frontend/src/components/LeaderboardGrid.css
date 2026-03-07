@@ -1,3 +1,9 @@
+.my-leaderboard-row {
+  background: #22304a !important;
+  color: #fff !important;
+  font-weight: bold;
+  box-shadow: 0 2px 8px 0 #22304a33;
+}
 /* Leaderboard grid styles for GitHub-like look */
 .leaderboard-table {
   width: 100%;
