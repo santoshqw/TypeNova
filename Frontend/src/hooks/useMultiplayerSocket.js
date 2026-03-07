@@ -8,7 +8,6 @@ const useMultiplayerSocket = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // In production, connect to same origin; in dev, connect to backend port
     const socketUrl = import.meta.env.VITE_SOCKET_URL || "";
     const socket = io(socketUrl, { autoConnect: true });
     socketRef.current = socket;
