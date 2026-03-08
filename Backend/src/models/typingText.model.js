@@ -22,11 +22,6 @@ const typingTextSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    level: {
-      type: String,
-      enum: ["hard", "easy", "medium", "veryhard"],
-      default: "easy",
-    },
   },
   { timestamps: true }
 );

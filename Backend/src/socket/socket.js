@@ -153,7 +153,7 @@ export const initSocket = (app) => {
   });
 
   io.on("connection", (socket) => {
-    console.log("User connected:", socket.id);
+    // ...existing code...
 
     // Create a new room
     socket.on("room:create", ({ username }) => {
@@ -394,7 +394,7 @@ export const initSocket = (app) => {
     });
 
     socket.on("disconnect", () => {
-      console.log("User disconnected:", socket.id);
+      // ...existing code...
       const roomId = socket.roomId;
       if (!roomId) return;
       const room = rooms.get(roomId);

@@ -7,7 +7,7 @@ const OPPONENT_COLORS = [
   "#56b6c2",
 ];
 
-const TypingPrompt = ({ text, userInput, opponents = [] }) => {
+const TypingPrompt = ({ text, userInput, opponents = [], animate = true }) => {
   const containerRef = useRef(null);
   const endRef = useRef(null);
   const charRefs = useRef([]);
@@ -27,6 +27,7 @@ const TypingPrompt = ({ text, userInput, opponents = [] }) => {
 
   // Trigger slide-up animation when text passage changes & reset scroll offset
   useLayoutEffect(() => {
+    if (!animate) return;
     if (prevTextRef.current !== text) {
       prevTextRef.current = text;
       scrollOffsetRef.current = 0;
@@ -38,7 +39,7 @@ const TypingPrompt = ({ text, userInput, opponents = [] }) => {
         el.classList.add("typing-slide-up");
       }
     }
-  }, [text]);
+  }, [text, animate]);
 
   // Direct DOM caret positioning + auto-scroll to keep focus on current line
   useLayoutEffect(() => {

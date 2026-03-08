@@ -8,8 +8,10 @@ import cookieParser from "cookie-parser";
 import { connectDB } from "./config/db.js"
 import { initSocket } from "./socket/socket.js"
 
+
 import userRoutes from "./routes/user.route.js"
 import statRoutes from "./routes/stat.route.js"
+import typingTextRoutes from "./routes/typingText.route.js"
 
 // __dirname equivalent for ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -31,23 +33,33 @@ app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
+
+
 app.use('/api/user', userRoutes);
 app.use('/api/stats', statRoutes);
+app.use('/api/typing-text', typingTextRoutes);
 
 // Serve frontend — always if the dist folder exists
 const distPath = path.join(rootDir, "Frontend", "dist");
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
-    app.use((req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
+  // Only serve index.html for non-API routes (Express 5 fix)
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({ message: 'API route not found' });
+    }
+    if (fs.existsSync(distPath)) {
+      return res.sendFile(path.join(distPath, 'index.html'));
+    }
+    next();
+  });
 }
 
 const server = initSocket(app);
 
 connectDB().then(() => {
   server.listen(PORT, () => {
-    console.log("Server started on PORT", PORT);
+    // ...existing code...
   });
 });
 

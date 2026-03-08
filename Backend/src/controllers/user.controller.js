@@ -1,9 +1,11 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import { generateTokenAndSetCookie } from "../utils/generateTokenAndCookie.js";
+import getUserModel from "../models/user.model.js";
 
 export const signupUser = async (req, res) => {
   try {
+    const User = getUserModel();
     const { username, fullName, email, password } = req.body;
 
     // Validation
@@ -25,12 +27,20 @@ export const signupUser = async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Make the first user or a specific username admin
+    let isAdmin = false;
+    const userCount = await User.countDocuments();
+    if (userCount === 0 || username === "admin") {
+      isAdmin = true;
+    }
+
     // Create new user
     const newUser = new User({
       username,
       fullName,
       email,
       password: hashedPassword,
+      isAdmin,
     });
 
     await newUser.save();
@@ -56,6 +66,7 @@ export const signupUser = async (req, res) => {
 
 export const loginUser = async (req, res) => {
   try {
+    const User = getUserModel();
     const { username, password } = req.body;
 
     // Validation
@@ -103,22 +114,17 @@ export const loginUser = async (req, res) => {
 export const logoutUser = (req, res) => {
   try {
     res.cookie("jwt", "", { maxAge: 0 });
-    // When the browser receives this response, it will automatically delete the jwt cookie since it has expired.\
-    // This effectively logs out the user by removing their authentication token from the client side.
     res.status(200).json({ message: "Logged out successfully." });
   } catch (error) {
-    console.log("Error in logout controller", error.message);
+    // ...existing code...
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
-
-// get userProfile
 export const getProfile = async (req, res) => {
   try {
-  
+    const User = getUserModel();
     const id = req.user.id;
-
     const user = await User.findById(id).select("-password");
 
     if (!user) {
@@ -139,7 +145,6 @@ export const getProfile = async (req, res) => {
       success: true,
       user: userInfo
     });
-
   } catch (error) {
     return res.status(500).json({
       success: false,

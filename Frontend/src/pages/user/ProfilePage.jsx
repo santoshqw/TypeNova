@@ -42,7 +42,7 @@ const AuthForm = () => {
       }
     } catch (err) {
       setError(err.message);
-      console.log(err.message)
+      // ...existing code...
     } finally {
       setLoading(false);
     }
