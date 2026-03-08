@@ -7,7 +7,7 @@ import TypingStats from "../components/TypingStats";
 import { RotateCw, AlertTriangle, MousePointer2 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth.jsx";
 
-// ...existing code...
+
 
 
 
