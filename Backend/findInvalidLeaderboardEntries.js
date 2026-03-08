@@ -16,10 +16,10 @@ async function findInvalidLeaderboardEntries() {
     }
   }
   if (invalid.length === 0) {
-    console.log("No invalid leaderboard entries found.");
+    // ...existing code...
   } else {
-    console.log("Invalid leaderboard entries:");
-    invalid.forEach(e => console.log(e));
+    // ...existing code...
+    // ...existing code...
   }
   await mongoose.disconnect();
 }

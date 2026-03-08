@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Zap, Users, User, Trophy } from "lucide-react";
+import AdminNavLink from "./AdminNavLink";
 
 const Logo = ({ onClick }) => (
   <button
@@ -59,6 +60,7 @@ const Navbar = ({ rightContent, onLogoClick }) => {
 
       <nav className="flex items-center gap-1">
         {rightContent}
+        <AdminNavLink />
         <NavLink
           to="/multiplayer"
           icon={<Users className="h-4 w-4" />}

@@ -37,7 +37,7 @@ export default function Leaderboard({ initialMode = 60 }) {
           msg += `: ${err.message}`;
         }
         setError(msg);
-        console.log(err);
+        // ...existing code...
         setLoading(false);
       });
   }, [timeMode]);

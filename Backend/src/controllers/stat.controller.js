@@ -64,7 +64,7 @@ export const saveTestResult = async (req, res) => {
 
     return res.status(200).json({ success: true, stats });
   } catch (error) {
-    console.error("saveTestResult error:", error.message);
+    // ...existing code...
     return res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -101,7 +101,7 @@ export const getGlobalLeaderboard = async (req, res) => {
       return res.status(500).json({ success: false, message: "Leaderboard DB query error", error: queryError?.message || queryError });
     }
     if (!leaders || leaders.length === 0) {
-      console.log("No leaderboard entries for mode", mode);
+      // ...existing code...
       return res.status(200).json({ success: true, leaderboard: [] });
     }
     // Filter out entries with missing user data

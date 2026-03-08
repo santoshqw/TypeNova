@@ -33,13 +33,16 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    isAdmin: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
   },
 );
 
-
-const model = mongoose.model("User", userSchema);
-
-export default model;
+export default function getUserModel() {
+  return mongoose.models.User || mongoose.model("User", userSchema);
+}

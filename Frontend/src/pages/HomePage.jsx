@@ -8,10 +8,7 @@ import { RotateCw, AlertTriangle, MousePointer2 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth.jsx";
 
 
-
-
-
-const TEST_TEXTS = [
+const FALLBACK_TEXTS = [
   "Typing fast is useful, but typing accurately is what actually makes you productive. Stay calm, keep a steady rhythm, and focus on every character.",
   "Build speed by reducing hesitation between words. Keep your eyes ahead, trust your fingers, and let your rhythm stay consistent.",
   "Great typing comes from smooth movement, not force. Press gently, recover quickly from mistakes, and stay relaxed through every line.",
@@ -21,7 +18,6 @@ const TEST_TEXTS = [
 const DURATION_OPTIONS = [15, 30, 60, 120];
 
 
-// Count correct characters between typed and source
 const countCorrectCharacters = (typedText, sourceText) =>
   [...typedText].reduce((total, char, i) => char === sourceText[i] ? total + 1 : total, 0);
 
@@ -31,9 +27,10 @@ const getInitialDuration = () => {
   return DURATION_OPTIONS.includes(parsed) ? parsed : 30;
 };
 
+
 const HomePage = () => {
   const { user } = useAuth();
-  // --- State ---
+  const [typingTexts, setTypingTexts] = useState(FALLBACK_TEXTS);
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [userInput, setUserInput] = useState("");
   const [duration, setDuration] = useState(getInitialDuration);
@@ -46,15 +43,24 @@ const HomePage = () => {
   const [capsLock, setCapsLock] = useState(false);
   const [restartSpin, setRestartSpin] = useState(false);
   const [isFocused, setIsFocused] = useState(true);
+  const [includePunctuation, setIncludePunctuation] = useState(false);
+  const [includeSymbol, setIncludeSymbol] = useState(false);
+  const [includeNumber, setIncludeNumber] = useState(false);
+  const [visibleLines, setVisibleLines] = useState(3);
 
-  // --- Refs for Real-time access in intervals ---
+  const currentText = typingTexts[currentTextIndex] || "";
+
+  const getVisibleText = (fullText) => fullText;
+
+
+  useEffect(() => {
+    Promise.resolve().then(() => setVisibleLines(3));
+  }, [currentTextIndex]);
+
   const typingBoxRef = useRef(null);
   const totalTypedRef = useRef(0);
   const totalCorrectRef = useRef(0);
 
-  const currentText = TEST_TEXTS[currentTextIndex];
-
-  // --- Derived Metrics ---
   const currentCorrectCharacters = useMemo(
     () => countCorrectCharacters(userInput, currentText),
     [userInput, currentText]
@@ -67,34 +73,29 @@ const HomePage = () => {
     [completedCorrect, currentCorrectCharacters]
   );
 
-  // MonkeyType-style WPM: (correct chars / 5) / minutes
   const wpm = useMemo(() => {
     const elapsedMinutes = (duration - timeLeft) / 60;
     if (elapsedMinutes <= 0) return 0;
     return Math.round((totalCorrect / 5) / elapsedMinutes);
   }, [timeLeft, totalCorrect, duration]);
 
-  // MonkeyType-style Raw WPM: (all visible typed chars / 5) / minutes
   const rawWpm = useMemo(() => {
     const elapsedMinutes = (duration - timeLeft) / 60;
     if (elapsedMinutes <= 0) return 0;
     return Math.round((totalTyped / 5) / elapsedMinutes);
   }, [timeLeft, totalTyped, duration]);
 
-  // Accuracy: correct / total visible typed chars
   const accuracy = useMemo(() => {
     if (totalTyped === 0) return 100;
     return Math.max(0, Math.round((totalCorrect / totalTyped) * 100));
   }, [totalCorrect, totalTyped]);
 
 
-  // Sync Refs for graph
   useEffect(() => {
     totalTypedRef.current = totalTyped;
     totalCorrectRef.current = totalCorrect;
   }, [totalTyped, totalCorrect]);
 
-  // --- Logic Functions ---
   const appendGraphPoint = useCallback((elapsedSeconds) => {
     if (elapsedSeconds <= 0) return;
 
@@ -125,7 +126,6 @@ const HomePage = () => {
     });
   }, []);
 
-  // Timer Interval
   useEffect(() => {
     if (!isRunning || isFinished) return;
 
@@ -146,7 +146,6 @@ const HomePage = () => {
     return () => clearInterval(interval);
   }, [isRunning, isFinished, duration, appendGraphPoint]);
 
-  // Save test result to backend when test finishes
   const hasSavedRef = useRef(false);
   useEffect(() => {
     if (!isFinished) {
@@ -179,7 +178,30 @@ const HomePage = () => {
   }, [isFinished, user, wpm, rawWpm, accuracy, totalCorrect, totalTyped, duration]);
 
 
-  // Handle typing logic
+  useEffect(() => {
+    const fetchTexts = async () => {
+      try {
+        const API_BASE = import.meta.env.VITE_API_URL || "";
+        const res = await fetch(`${API_BASE}/api/typing-text/list`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          // ...existing code...
+          if (Array.isArray(data) && data.length > 0) {
+            setTypingTexts(data.map(t => t.text || ""));
+          }
+        } else {
+          // ...existing code...
+        }
+      } catch {
+        // silently fail
+      }
+    };
+    fetchTexts();
+  }, []);
+
   const handleTyping = (event) => {
     if (isFinished || event.key === "Tab") return;
     if (event.key.startsWith("F") && event.key.length >= 2) return;
@@ -195,7 +217,7 @@ const HomePage = () => {
     if (nextInput.length === currentText.length) {
       setCompletedTyped((prev) => prev + currentText.length);
       setCompletedCorrect((prev) => prev + countCorrectCharacters(nextInput, currentText));
-      setCurrentTextIndex((prev) => (prev + 1) % TEST_TEXTS.length);
+      setCurrentTextIndex((prev) => (prev + 1) % typingTexts.length);
       setUserInput("");
     } else {
       setUserInput(nextInput);
@@ -203,10 +225,9 @@ const HomePage = () => {
   };
 
 
-  // Restart test
   const handleRestart = useCallback((overrideDuration) => {
     const dur = typeof overrideDuration === 'number' ? overrideDuration : duration;
-    setCurrentTextIndex(Math.floor(Math.random() * TEST_TEXTS.length));
+    setCurrentTextIndex(Math.floor(Math.random() * typingTexts.length));
     setUserInput("");
     setTimeLeft(dur);
     setIsRunning(false);
@@ -220,7 +241,7 @@ const HomePage = () => {
       typingBoxRef.current?.focus();
       setIsFocused(true);
     }, 0);
-  }, [duration]);
+  }, [duration, typingTexts.length]);
 
   const handleDurationChange = (newDuration) => {
     setDuration(newDuration);
@@ -229,10 +250,8 @@ const HomePage = () => {
   };
 
 
-  // Caps lock state
   const handleKeyEvent = (event) => setCapsLock(event.getModifierState?.("CapsLock") ?? false);
 
-  // Global Keyboard Listeners
   useEffect(() => {
     let tabPressed = false;
     const handleGlobalKey = (e) => {
@@ -249,7 +268,26 @@ const HomePage = () => {
     return () => window.removeEventListener("keydown", handleGlobalKey);
   }, [handleRestart]);
 
-  // Track focus state on the typing area
+  useEffect(() => {
+    if (!isFinished && typingBoxRef.current) {
+      typingBoxRef.current.focus();
+    }
+  }, [isFinished, isRunning, currentTextIndex]);
+
+  useEffect(() => {
+    if (isFinished) return;
+    function handleDocumentClick(e) {
+      // If click is on a button, input, textarea, select, or contenteditable, do not refocus
+      const tag = e.target.tagName;
+      const isInteractive = ["BUTTON", "INPUT", "TEXTAREA", "SELECT", "A"].includes(tag) || e.target.isContentEditable;
+      if (!isInteractive && typingBoxRef.current && document.activeElement !== typingBoxRef.current) {
+        typingBoxRef.current.focus();
+      }
+    }
+    document.addEventListener("mousedown", handleDocumentClick, true);
+    return () => document.removeEventListener("mousedown", handleDocumentClick, true);
+  }, [isFinished]);
+
   useEffect(() => {
     if (isFinished) return;
     const box = typingBoxRef.current;
@@ -265,7 +303,6 @@ const HomePage = () => {
   }, [isFinished]);
 
 
-  // Refocus on any keypress when unfocused
   useEffect(() => {
     if (isFinished || isFocused) return;
     const refocusOnKey = () => typingBoxRef.current?.focus();
@@ -284,27 +321,54 @@ const HomePage = () => {
     </button>
   );
 
+
   return (
     <Layout rightContent={restartButton} onLogoClick={handleRestart}>
-      {/* Mode selector */}
       {!isRunning && !isFinished && (
-        <div className="mb-4 flex items-center justify-center animate-fade-in">
-          <div className="duration-selector">
-            <span className="mr-1 px-2 text-xs text-sub">time</span>
-            {DURATION_OPTIONS.map((opt) => (
-              <button
-                key={opt}
-                onClick={() => handleDurationChange(opt)}
-                className={`duration-btn ${duration === opt ? "active" : ""}`}
-              >
-                {opt}
-              </button>
-            ))}
+        <>
+          <div className="mb-4 flex items-center justify-center animate-fade-in">
+            <div className="duration-selector">
+              <span className="mr-1 px-2 text-xs text-sub">time</span>
+              {DURATION_OPTIONS.map((opt) => (
+                <button
+                  key={opt}
+                  onClick={() => handleDurationChange(opt)}
+                  className={`duration-btn ${duration === opt ? "active" : ""}`}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+          <div className="mb-4 flex items-center justify-center gap-6 animate-fade-in">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includePunctuation}
+                onChange={e => setIncludePunctuation(e.target.checked)}
+              />
+              <span className="text-sm">Punctuation</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includeSymbol}
+                onChange={e => setIncludeSymbol(e.target.checked)}
+              />
+              <span className="text-sm">Symbol</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includeNumber}
+                onChange={e => setIncludeNumber(e.target.checked)}
+              />
+              <span className="text-sm">Number</span>
+            </label>
+          </div>
+        </>
       )}
 
-      {/* Timer */}
       {isRunning && !isFinished && (
         <div className="mb-2 flex items-baseline gap-4">
           <span className={`font-mono text-4xl font-bold tabular-nums sm:text-5xl ${timeLeft <= 5 ? "text-error" : "text-main"}`}>
@@ -313,7 +377,6 @@ const HomePage = () => {
         </div>
       )}
 
-      {/* Results */}
       {isFinished && (
         <div className="mb-6 animate-fade-in">
           <TypingGraph data={graphData} showAfterComplete={isFinished} wpm={wpm} accuracy={accuracy} />
@@ -328,7 +391,6 @@ const HomePage = () => {
         </div>
       )}
 
-      {/* Typing area */}
       {!isFinished && (
         <div
           ref={typingBoxRef}
@@ -348,11 +410,17 @@ const HomePage = () => {
             }
             return null;
           })()}
-          <div className="overflow-hidden text-xl leading-[1.75] sm:text-2xl" style={{ maxHeight: '7.5em' }}>
-            <TypingPrompt text={currentText} userInput={userInput} />
+          <div
+            className="overflow-hidden text-xl leading-[1.75] sm:text-2xl"
+            style={{ maxHeight: `${visibleLines * 1.75}em`, transition: 'max-height 0.2s' }}
+          >
+            <TypingPrompt
+              text={getVisibleText(currentText)}
+              userInput={userInput}
+              animate={isRunning && !isFinished}
+            />
           </div>
 
-          {/* Focus lost overlay */}
           {isRunning && !isFocused && (
             <div
               className="focus-overlay"
@@ -365,16 +433,14 @@ const HomePage = () => {
             </div>
           )}
 
-          {capsLock && isRunning && (
-            <div className="caps-warning mt-3 flex items-center gap-2 text-xs text-error">
-              <AlertTriangle className="h-3.5 w-3.5" />
-              Caps Lock is on
-            </div>
-          )}
         </div>
       )}
 
-      {/* Bottom actions */}
+      {/* Reset scroll position when finished */}
+      {isFinished && (
+        <script dangerouslySetInnerHTML={{__html: 'window.scrollTo(0,0);'}} />
+      )}
+
       {isFinished && (
         <div className="mt-8 flex justify-center animate-fade-in">
           <button onClick={handleRestart} className="btn btn-secondary flex items-center gap-2">
