@@ -76,8 +76,20 @@ const HomePage = () => {
 
 
   useEffect(() => {
+    if (isFinished) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [isFinished])
+
+
+  useEffect(() => {
     Promise.resolve().then(() => setVisibleLines(3));
   }, [currentTextIndex]);
+
+
+  {/* Reset scroll position when finished (handled by useEffect) */ }
+
+
 
   const typingBoxRef = useRef(null);
   const totalTypedRef = useRef(0);
@@ -89,7 +101,7 @@ const HomePage = () => {
   );
 
   const totalTyped = useMemo(() => completedTyped + userInput.length, [completedTyped, userInput.length]);
-  
+
   const totalCorrect = useMemo(
     () => completedCorrect + currentCorrectCharacters,
     [completedCorrect, currentCorrectCharacters]
@@ -441,7 +453,7 @@ const HomePage = () => {
           {(() => {
             if (typeof userInput !== 'string' || typeof currentText !== 'string') {
               console.error('userInput or currentText is not a string:', { userInput, currentText });
-              return <div style={{color:'red'}}>Error: Invalid input state. Please reload the page.</div>;
+              return <div style={{ color: 'red' }}>Error: Invalid input state. Please reload the page.</div>;
             }
             return null;
           })()}
@@ -471,10 +483,6 @@ const HomePage = () => {
         </div>
       )}
 
-      {/* Reset scroll position when finished */}
-      {isFinished && (
-        <script dangerouslySetInnerHTML={{__html: 'window.scrollTo(0,0);'}} />
-      )}
 
       {isFinished && (
         <div className="mt-8 flex justify-center animate-fade-in">
