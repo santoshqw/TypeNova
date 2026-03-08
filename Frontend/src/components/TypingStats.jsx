@@ -10,7 +10,7 @@ const StatBlock = ({ label, value, suffix = "", delay = 0, large = false }) => (
     </p>
     <p
       className={`animate-count-up font-semibold leading-none tabular-nums ${
-        large ? "text-[2.8rem] text-main sm:text-[3.5rem]" : "text-lg text-text"
+        large ? "text-[2.8rem] text-main sm:text-[3.5rem]" : "text-base text-text"
       }`}
       style={{ animationDelay: `${delay + 50}ms` }}
     >
@@ -48,7 +48,7 @@ const TypingStats = ({ time, raw, correct = 0, incorrect = 0, extra = 0, missed 
           }
           delay={240}
         />
-        <StatBlock label="time" value={`${time}s`} delay={280} />
+        <StatBlock label="time" value={`${time}s`} delay={280} large={false} />
       </div>
     </div>
   );
