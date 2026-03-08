@@ -48,7 +48,29 @@ const HomePage = () => {
   const [includeNumber, setIncludeNumber] = useState(false);
   const [visibleLines, setVisibleLines] = useState(3);
 
-  const currentText = typingTexts[currentTextIndex] || "";
+
+  // Utility to filter text based on options
+  const filterText = useCallback((text) => {
+    let filtered = text;
+    if (!includePunctuation) {
+      filtered = filtered.replace(/[.,!?;:'"()\[\]{}<>\-]/g, "");
+    }
+    if (!includeSymbol) {
+      filtered = filtered.replace(/[~`@#$%^&*_+=|\\/]/g, "");
+    }
+    if (!includeNumber) {
+      filtered = filtered.replace(/[0-9]/g, "");
+    }
+    // Remove double spaces from filtering
+    filtered = filtered.replace(/  +/g, ' ');
+    return filtered.trim();
+  }, [includePunctuation, includeSymbol, includeNumber]);
+
+  // Compute the current text based on options
+  const currentText = useMemo(() => {
+    const base = typingTexts[currentTextIndex] || "";
+    return filterText(base);
+  }, [typingTexts, currentTextIndex, filterText]);
 
   const getVisibleText = (fullText) => fullText;
 
@@ -225,6 +247,7 @@ const HomePage = () => {
   };
 
 
+
   const handleRestart = useCallback((overrideDuration) => {
     const dur = typeof overrideDuration === 'number' ? overrideDuration : duration;
     setCurrentTextIndex(Math.floor(Math.random() * typingTexts.length));
@@ -242,6 +265,18 @@ const HomePage = () => {
       setIsFocused(true);
     }, 0);
   }, [duration, typingTexts.length]);
+
+  // When options change, reset typing state and re-filter text
+  useEffect(() => {
+    setUserInput("");
+    setIsRunning(false);
+    setIsFinished(false);
+    setGraphData([]);
+    setCompletedTyped(0);
+    setCompletedCorrect(0);
+    // Optionally, pick a new random text or keep the same index
+    // setCurrentTextIndex(Math.floor(Math.random() * typingTexts.length));
+  }, [includePunctuation, includeSymbol, includeNumber, typingTexts, currentTextIndex]);
 
   const handleDurationChange = (newDuration) => {
     setDuration(newDuration);
