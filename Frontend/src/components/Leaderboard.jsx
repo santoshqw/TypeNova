@@ -7,7 +7,7 @@ import "./LeaderboardGrid.css";
 
 const TIME_MODES = [15, 30, 60, 120];
 
-export default function Leaderboard({ initialMode = 60 }) {
+export default function Leaderboard({ initialMode = 15 }) {
   const [timeMode, setTimeMode] = useState(initialMode);
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(false);
