@@ -63,6 +63,7 @@ export default function Leaderboard({ initialMode = 15 }) {
                 <th className="py-1 px-2 text-left font-medium">Rank</th>
                 <th className="py-1 px-2 text-left font-medium">User</th>
                 <th className="py-1 px-2 text-left font-medium">WPM</th>
+                <th className="py-1 px-2 text-left font-medium">Accuracy</th>
                 <th className="py-1 px-2 text-left font-medium">Achieved</th>
               </tr>
             </thead>
@@ -94,6 +95,7 @@ export default function Leaderboard({ initialMode = 15 }) {
                             <span className="truncate max-w-[100px]">{entry.user.username}</span>
                           </td>
                           <td className="py-1 px-2">{entry.bestWPM}</td>
+                          <td className="py-1 px-2">{typeof entry.bestAccuracy === 'number' ? entry.bestAccuracy + '%' : '-'}</td>
                           <td className="py-1 px-2 text-sub">{new Date(entry.achievedAt).toLocaleString()}</td>
                         </tr>
                       );
@@ -104,7 +106,7 @@ export default function Leaderboard({ initialMode = 15 }) {
         </div>
         {myEntry && (
           <div className="my-rank-highlight mt-2 p-1 rounded text-main text-center text-xs">
-            <b>Your Rank:</b> {myEntry.rank} &nbsp;|&nbsp; <b>WPM:</b> {myEntry.bestWPM}
+            <b>Your Rank:</b> {myEntry.rank} &nbsp;|&nbsp; <b>WPM:</b> {myEntry.bestWPM} &nbsp;|&nbsp; <b>Accuracy:</b> {typeof myEntry.bestAccuracy === 'number' ? myEntry.bestAccuracy + '%' : '-'}
           </div>
         )}
       </div>
