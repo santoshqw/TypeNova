@@ -59,7 +59,7 @@ export const saveTestResult = async (req, res) => {
 
     // Update global leaderboard for the time mode if provided
     if (typeof duration === "number" && [15,30,60,120].includes(duration)) {
-      await updateLeaderboard(req.user.id, wpm, duration);
+      await updateLeaderboard(req.user.id, wpm, duration, accuracy);
     }
 
     return res.status(200).json({ success: true, stats });
