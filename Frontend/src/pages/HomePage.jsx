@@ -38,6 +38,30 @@ const HomePage = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
   const [graphData, setGraphData] = useState([]);
+  const [showCongrats, setShowCongrats] = useState(false);
+  // Helper to get a unique key for the current mode (duration + options)
+  const getModeKey = () => {
+    return `typenova-best-wpm-${duration}-${includePunctuation ? 'p' : ''}${includeSymbol ? 's' : ''}${includeNumber ? 'n' : ''}`;
+  };
+
+  // Get best WPM and accuracy for current mode
+  const getBestWpm = () => {
+    const key = getModeKey();
+    const val = localStorage.getItem(key);
+    return val ? Number(val) : 0;
+  };
+  const getBestAccuracy = () => {
+    const key = getModeKey() + '-acc';
+    const val = localStorage.getItem(key);
+    return val ? Number(val) : 0;
+  };
+
+  // Set best WPM and accuracy for current mode
+  const setBestWpmAndAccuracy = (wpm, acc) => {
+    const key = getModeKey();
+    localStorage.setItem(key, String(wpm));
+    localStorage.setItem(key + '-acc', String(acc));
+  };
   const [completedTyped, setCompletedTyped] = useState(0);
   const [completedCorrect, setCompletedCorrect] = useState(0);
   const [capsLock, setCapsLock] = useState(false);
@@ -129,6 +153,25 @@ const HomePage = () => {
     totalTypedRef.current = totalTyped;
     totalCorrectRef.current = totalCorrect;
   }, [totalTyped, totalCorrect]);
+
+  // Check for new record when finished
+  useEffect(() => {
+    if (!isFinished) {
+      setShowCongrats(false);
+      return;
+    }
+    const bestWpm = getBestWpm();
+    const bestAcc = getBestAccuracy();
+    if (
+      wpm > bestWpm ||
+      (wpm === bestWpm && accuracy > bestAcc)
+    ) {
+      setShowCongrats(true);
+      setBestWpmAndAccuracy(wpm, accuracy);
+    } else {
+      setShowCongrats(false);
+    }
+  }, [isFinished, wpm, accuracy, duration, includePunctuation, includeSymbol, includeNumber]);
 
   const appendGraphPoint = useCallback((elapsedSeconds) => {
     if (elapsedSeconds <= 0) return;
@@ -426,6 +469,11 @@ const HomePage = () => {
 
       {isFinished && (
         <div className="mb-6 animate-fade-in">
+          {showCongrats && (
+            <div className="mb-4 p-3 rounded bg-green-100 text-green-800 text-center font-bold text-xl shadow">
+             Congratulations! New WPM Record: {wpm}
+            </div>
+          )}
           <TypingGraph data={graphData} showAfterComplete={isFinished} wpm={wpm} accuracy={accuracy} />
           <TypingStats
             time={duration}

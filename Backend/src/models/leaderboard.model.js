@@ -16,6 +16,13 @@ const leaderboardSchema = new mongoose.Schema({
     required: true,
     min: 0,
   },
+  bestAccuracy: {
+    type: Number,
+    required: true,
+    min: 0,
+    max: 100,
+    default: 0,
+  },
   achievedAt: {
     type: Date,
     default: Date.now,

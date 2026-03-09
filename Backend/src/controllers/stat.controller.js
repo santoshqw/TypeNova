@@ -70,13 +70,19 @@ export const saveTestResult = async (req, res) => {
 };
 
 
-export const updateLeaderboard = async (userId, wpm, timeMode) => {
+
+// Properly define updateLeaderboard as an exported async function
+export const updateLeaderboard = async (userId, wpm, timeMode, accuracy = 0) => {
   if (![15, 30, 60, 120].includes(timeMode)) return;
   const existing = await Leaderboard.findOne({ user: userId, timeMode });
   if (!existing) {
-    await Leaderboard.create({ user: userId, timeMode, bestWPM: wpm });
-  } else if (wpm > existing.bestWPM) {
+    await Leaderboard.create({ user: userId, timeMode, bestWPM: wpm, bestAccuracy: accuracy });
+  } else if (
+    wpm > existing.bestWPM ||
+    (wpm === existing.bestWPM && accuracy > (existing.bestAccuracy || 0))
+  ) {
     existing.bestWPM = wpm;
+    existing.bestAccuracy = accuracy;
     existing.achievedAt = new Date();
     await existing.save();
   }
@@ -101,25 +107,28 @@ export const getGlobalLeaderboard = async (req, res) => {
       return res.status(500).json({ success: false, message: "Leaderboard DB query error", error: queryError?.message || queryError });
     }
     if (!leaders || leaders.length === 0) {
-      // ...existing code...
       return res.status(200).json({ success: true, leaderboard: [] });
     }
-    // Filter out entries with missing user data
     const filteredLeaders = leaders.filter(entry => entry.user && typeof entry.user === 'object' && entry.user.username);
     if (filteredLeaders.length === 0) {
       return res.status(200).json({ success: true, leaderboard: [] });
     }
-    // Assign ranks, handle ties
-    let lastWPM = null, lastRank = 0, rank = 0;
+    let lastWPM = null, lastAcc = null, lastRank = 0, rank = 0;
     const ranked = filteredLeaders.map((entry, i) => {
       let user = entry.user;
-      rank = (entry.bestWPM === lastWPM) ? lastRank : i + 1;
+      if (entry.bestWPM === lastWPM && entry.bestAccuracy === lastAcc) {
+        rank = lastRank;
+      } else {
+        rank = i + 1;
+      }
       lastWPM = entry.bestWPM;
+      lastAcc = entry.bestAccuracy;
       lastRank = rank;
       return {
         rank,
         user,
         bestWPM: entry.bestWPM,
+        bestAccuracy: entry.bestAccuracy,
         achievedAt: entry.achievedAt,
       };
     });
