@@ -1,3 +1,5 @@
+#Link of website: https://typenova-1.onrender.com/
+
 # TypeNova
 
 TypeNova is a typing platform where users can practice typing in multiple languages and compete with other players in real-time typing battles.
