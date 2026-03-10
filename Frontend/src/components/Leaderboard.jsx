@@ -96,7 +96,7 @@ export default function Leaderboard({ initialMode = 15 }) {
                           </td>
                           <td className="py-1 px-2">{entry.bestWPM}</td>
                           <td className="py-1 px-2">{typeof entry.bestAccuracy === 'number' ? entry.bestAccuracy + '%' : '-'}</td>
-                          <td className="py-1 px-2 text-sub">{new Date(entry.achievedAt).toLocaleString()}</td>
+                          <td className="py-1 px-2 text-sub">{new Date(entry.achievedAt).toISOString().slice(0, 10)}</td>
                         </tr>
                       );
                     })
