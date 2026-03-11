@@ -12,5 +12,8 @@
     "dev": "concurrently \"npm run --prefix Backend dev\" \"npm run --prefix Frontend dev\""
   },
   "keywords": [],
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "canvas-confetti": "^1.9.4"
+  }
 }
