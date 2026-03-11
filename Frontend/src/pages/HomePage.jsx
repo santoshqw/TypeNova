@@ -1,10 +1,12 @@
 
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import confetti from "canvas-confetti";
 import Layout from "../components/Layout";
 import TypingGraph from "../components/TypingGraph";
 import TypingPrompt from "../components/TypingPrompt";
 import TypingStats from "../components/TypingStats";
 import { RotateCw, AlertTriangle, MousePointer2 } from "lucide-react";
+import ConfettiExplosion from "../components/ConfettiExplosion";
 import { useAuth } from "../hooks/useAuth.jsx";
 
 
@@ -470,9 +472,13 @@ const HomePage = () => {
       {isFinished && (
         <div className="mb-6 animate-fade-in">
           {showCongrats && (
-            <div className="mb-4 p-3 rounded bg-green-100 text-green-800 text-center font-bold text-xl shadow">
-             Congratulations! New WPM Record: {wpm}
-            </div>
+            <>
+              <ConfettiExplosion trigger={showCongrats} />
+              <div className="mb-4 p-3 rounded-lg bg-gradient-to-r from-green-400 to-blue-400 text-white text-center font-extrabold text-2xl shadow-lg animate-bounce">
+                Congratulations! <br />
+                <span className="block mt-1 text-lg font-bold">New WPM Record: <span className="text-yellow-300">{wpm}</span></span>
+              </div>
+            </>
           )}
           <TypingGraph data={graphData} showAfterComplete={isFinished} wpm={wpm} accuracy={accuracy} />
           <TypingStats
