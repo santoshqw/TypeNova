@@ -474,9 +474,10 @@ const HomePage = () => {
           {showCongrats && (
             <>
               <ConfettiExplosion trigger={showCongrats} />
-              <div className="mb-4 p-3 rounded-lg bg-gradient-to-r from-green-400 to-blue-400 text-white text-center font-extrabold text-2xl shadow-lg animate-bounce">
-                Congratulations! <br />
-                <span className="block mt-1 text-lg font-bold">New WPM Record: <span className="text-yellow-300">{wpm}</span></span>
+              <div className="mb-4 flex flex-col items-center justify-center animate-fade-in">
+                <span className="text-3xl mb-2">🎉</span>
+                <div className="text-xl font-bold text-main text-center">Congratulations!</div>
+                <div className="text-base text-center mt-1">New WPM Record: <span className="text-yellow-500 font-semibold">{wpm}</span></div>
               </div>
             </>
           )}
