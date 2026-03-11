@@ -1,4 +1,5 @@
 import React, { useCallback, useLayoutEffect, useRef, useEffect } from "react";
+import "./TypingPrompt.css";
 
 const OPPONENT_COLORS = [
   "#e06c75",

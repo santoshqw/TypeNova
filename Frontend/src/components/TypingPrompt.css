@@ -1,0 +1,12 @@
+.typing-caret {
+  width: 2px;
+  background: var(--main-color, #4f8cff);
+  border-radius: 1px;
+  box-shadow: 0 0 8px 2px rgba(79, 140, 255, 0.25);
+  transition: transform 0.18s cubic-bezier(0.4, 0.2, 0.2, 1), height 0.18s cubic-bezier(0.4, 0.2, 0.2, 1), background 0.18s;
+  z-index: 20;
+}
+.typing-caret.typing-active {
+  background: var(--accent-color, #ffb300);
+  box-shadow: 0 0 16px 4px rgba(255, 179, 0, 0.25);
+}
