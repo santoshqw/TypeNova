@@ -135,11 +135,9 @@ const TypingGraph = ({ data, showAfterComplete, wpm = 0, accuracy = 0 }) => {
               type="monotone"
               dataKey="errors"
               name="errors"
-              stroke={C.error}
-              strokeWidth={1}
-              strokeOpacity={0.6}
-              fill="url(#gErr)"
-              dot={false}
+              stroke="none"
+              fill="none"
+              dot={{ r: 3, fill: C.error }}
               activeDot={{ r: 3, fill: C.error }}
               isAnimationActive
               animationDuration={800}
