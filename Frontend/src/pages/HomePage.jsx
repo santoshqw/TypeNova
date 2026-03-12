@@ -406,16 +406,16 @@ const HomePage = () => {
     <button
       type="button"
       onClick={handleRestart}
-      className="nav-link"
+      className="btn btn-secondary flex items-center gap-2 mt-4"
       title="Restart test (Tab + Enter)"
     >
       <RotateCw className={`h-4 w-4 ${restartSpin ? "restart-icon-spin" : ""}`} />
+      Restart
     </button>
   );
 
-
   return (
-    <Layout rightContent={restartButton} onLogoClick={handleRestart}>
+    <Layout onLogoClick={handleRestart}>
       {!isRunning && !isFinished && (
         <>
           <div className="mb-4 flex items-center justify-center animate-fade-in">
@@ -494,48 +494,50 @@ const HomePage = () => {
       )}
 
       {!isFinished && (
-        <div
-          ref={typingBoxRef}
-          tabIndex={0}
-          autoFocus
-          onKeyDown={(e) => {
-            handleKeyEvent(e);
-            handleTyping(e);
-          }}
-          onClick={() => typingBoxRef.current?.focus()}
-          className="typing-area relative cursor-text rounded-lg py-4 outline-none"
-        >
-          {(() => {
-            if (typeof userInput !== 'string' || typeof currentText !== 'string') {
-              console.error('userInput or currentText is not a string:', { userInput, currentText });
-              return <div style={{ color: 'red' }}>Error: Invalid input state. Please reload the page.</div>;
-            }
-            return null;
-          })()}
+        <>
           <div
-            className="overflow-hidden text-xl leading-[1.75] sm:text-2xl"
-            style={{ maxHeight: `${visibleLines * 1.75}em`, transition: 'max-height 0.2s' }}
+            ref={typingBoxRef}
+            tabIndex={0}
+            autoFocus
+            onKeyDown={(e) => {
+              handleKeyEvent(e);
+              handleTyping(e);
+            }}
+            onClick={() => typingBoxRef.current?.focus()}
+            className="typing-area relative cursor-text rounded-lg py-4 outline-none"
           >
-            <TypingPrompt
-              text={getVisibleText(currentText)}
-              userInput={userInput}
-              animate={isRunning && !isFinished}
-            />
-          </div>
-
-          {isRunning && !isFocused && (
+            {(() => {
+              if (typeof userInput !== 'string' || typeof currentText !== 'string') {
+                console.error('userInput or currentText is not a string:', { userInput, currentText });
+                return <div style={{ color: 'red' }}>Error: Invalid input state. Please reload the page.</div>;
+              }
+              return null;
+            })()}
             <div
-              className="focus-overlay"
-              onClick={() => typingBoxRef.current?.focus()}
+              className="overflow-hidden text-xl leading-[1.75] sm:text-2xl"
+              style={{ maxHeight: `${visibleLines * 1.75}em`, transition: 'max-height 0.2s' }}
             >
-              <div className="focus-overlay-content">
-                <MousePointer2 className="h-5 w-5" />
-                <span>Click here or press any key to focus</span>
-              </div>
+              <TypingPrompt
+                text={getVisibleText(currentText)}
+                userInput={userInput}
+                animate={isRunning && !isFinished}
+              />
             </div>
-          )}
 
-        </div>
+            {isRunning && !isFocused && (
+              <div
+                className="focus-overlay"
+                onClick={() => typingBoxRef.current?.focus()}
+              >
+                <div className="focus-overlay-content">
+                  <MousePointer2 className="h-5 w-5" />
+                  <span>Click here or press any key to focus</span>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="flex justify-center">{restartButton}</div>
+        </>
       )}
 
 
