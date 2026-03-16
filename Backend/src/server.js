@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import rateLimit from "express-rate-limit";
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -22,8 +23,20 @@ const rootDir = path.resolve(__dirname, "../..");
 
 dotenv.config({ path: path.join(rootDir, "Backend", ".env") });
 
+
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// ── Rate Limiting ──
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  message: {
+    message: "Too many requests from this IP, please try again later."
+  }
+});
 
 const allowedOrigins = process.env.NODE_ENV === "production"
   ? [process.env.CLIENT_URL].filter(Boolean)
@@ -35,15 +48,17 @@ app.use(cookieParser());
 
 
 
+// Apply rate limiter to all API routes
+app.use('/api/', apiLimiter);
 app.use('/api/user', userRoutes);
 app.use('/api/stats', statRoutes);
 app.use('/api/typing-text', typingTextRoutes);
 
-// Serve frontend — always if the dist folder exists
+// Serve frontend if the dist folder exists
 const distPath = path.join(rootDir, "Frontend", "dist");
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
-  // Only serve index.html for non-API routes (Express 5 fix)
+ 
   app.use((req, res, next) => {
     if (req.path.startsWith('/api/')) {
       return res.status(404).json({ message: 'API route not found' });
@@ -59,11 +74,11 @@ const server = initSocket(app);
 
 connectDB().then(() => {
   server.listen(PORT, () => {
-    // ...existing code...
+  
   });
 });
 
-// ── Graceful shutdown (fixes EADDRINUSE on nodemon restart) ──
+// Graceful shutdown
 const shutdown = () => {
   server.close(() => process.exit(0));
   setTimeout(() => process.exit(1), 3000);
