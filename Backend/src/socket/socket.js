@@ -394,7 +394,7 @@ export const initSocket = (app) => {
     });
 
     socket.on("disconnect", () => {
-      // ...existing code...
+     
       const roomId = socket.roomId;
       if (!roomId) return;
       const room = rooms.get(roomId);

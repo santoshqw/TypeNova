@@ -8,7 +8,7 @@ function getTypingTextController() {
         const { text, textInfo } = req.body;
 
         if (!text || !textInfo) {
-          // ...existing code...
+         
           return res.status(400).json({ message: "both fields are required" });
         }
 
@@ -23,11 +23,11 @@ function getTypingTextController() {
           .status(201)
           .json({ message: "new typing text created", info: newTypingText });
       } catch (error) {
-        // ...existing code...
+       
         return res.status(500).json({ message: "internal server error" });
       }
     },
-    // Add other controller methods here as needed
+   
   };
 }
 
